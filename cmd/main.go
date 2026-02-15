@@ -18,18 +18,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-package main
-
-import (
-"context"
-"log"
-"net/http"
-"os"
-"os/signal"
-"syscall"
-"time"
-)
-
 func main() {
 	db := connectDatabase()
 	defer db.Close()
@@ -66,7 +54,6 @@ func main() {
 
 	log.Println("server stopped")
 }
-
 
 func connectDatabase() *sql.DB {
 	host := os.Getenv("DB_HOST")
