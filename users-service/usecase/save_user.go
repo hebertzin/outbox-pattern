@@ -2,9 +2,8 @@ package usecase
 
 import (
 	"context"
-
-	"users-services/db/repository"
-	"users-services/entity"
+	"users-services/domain/entity"
+	"users-services/infra/db/repository"
 )
 
 type CreateUserUseCase struct {

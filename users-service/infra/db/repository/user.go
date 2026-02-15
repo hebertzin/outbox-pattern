@@ -5,8 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-
-	"users-services/entity"
+	"users-services/domain/entity"
 )
 
 type UserRepository interface {

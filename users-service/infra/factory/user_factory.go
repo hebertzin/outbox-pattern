@@ -2,7 +2,7 @@ package factory
 
 import (
 	"database/sql"
-	"users-services/db/repository"
+	"users-services/infra/db/repository"
 
 	"users-services/usecase"
 )
