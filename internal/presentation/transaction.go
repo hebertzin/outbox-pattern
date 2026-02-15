@@ -32,6 +32,17 @@ func NewCreateTransactionHandler(uc usecase.CreateTransactionExecutor) *CreateTr
 	return &CreateTransactionHandler{uc: uc}
 }
 
+// CreateTransaction godoc
+// @Summary      Create a transaction
+// @Description  Creates a transaction and writes an outbox event with status PENDING.
+// @Tags         transactions
+// @Accept       json
+// @Produce      json
+// @Param        request  body      createTransactionRequest  true  "Transaction payload"
+// @Success      201      {object}  createTransactionResponse
+// @Failure      400      {object}  map[string]any
+// @Failure      500      {object}  map[string]any
+// @Router       /transactions [post]
 func (h *CreateTransactionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createTransactionRequest
 

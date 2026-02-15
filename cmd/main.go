@@ -16,13 +16,20 @@ import (
 	"transaction-service/internal/usecase"
 
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title           Transaction Service API
+// @version         1.0
+// @description     API for creating transactions using Outbox Pattern.
+// @BasePath        /api/v1
 func main() {
 	db := connectDatabase()
 	defer db.Close()
 
 	router := registerTransactionRoutes(db)
+
+	registerSwagger(router)
 
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -55,6 +62,25 @@ func main() {
 	log.Println("server stopped")
 }
 
+func registerSwagger(router *mux.Router) {
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+}
+
+func registerTransactionRoutes(db *sql.DB) *mux.Router {
+	router := mux.NewRouter()
+	transactionHandler := transactionFactory(db)
+	transactionHandler.RegisterRoutes(router)
+	return router
+}
+
+func transactionFactory(db *sql.DB) *presentation.CreateTransactionHandler {
+	r := infra.NewTransactionRepository(db)
+	u := usecase.NewCreateTransactionUseCase(r)
+	h := presentation.NewCreateTransactionHandler(u)
+
+	return h
+}
+
 func connectDatabase() *sql.DB {
 	host := os.Getenv("DB_HOST")
 	portStr := os.Getenv("DB_PORT")
@@ -80,19 +106,4 @@ func connectDatabase() *sql.DB {
 	}
 
 	return dbConn.DB
-}
-
-func registerTransactionRoutes(db *sql.DB) *mux.Router {
-	router := mux.NewRouter()
-	transactionHandler := transactionFactory(db)
-	transactionHandler.RegisterRoutes(router)
-	return router
-}
-
-func transactionFactory(db *sql.DB) *presentation.CreateTransactionHandler {
-	r := infra.NewTransactionRepository(db)
-	u := usecase.NewCreateTransactionUseCase(r)
-	h := presentation.NewCreateTransactionHandler(u)
-
-	return h
 }
