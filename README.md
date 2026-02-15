@@ -43,6 +43,10 @@ Repository Layer (Infrastructure)
      Message Broker (Kafka / SQS / RabbitMQ)
 ```
 
+
+<img width="5810" height="1983" alt="OUTRA ARQUITETURA" src="https://github.com/user-attachments/assets/e53ca23d-1d1c-492f-a8f7-717e25559486" />
+
+
 ---
 
 ## Outbox Pattern
