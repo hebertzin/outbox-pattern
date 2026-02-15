@@ -7,13 +7,15 @@ import (
 	"transaction-service/internal/domain"
 )
 
-type TransactionRepository interface {
-	CreateTransaction(ctx context.Context, txEntity *domain.Transaction) error
-}
+type (
+	TransactionRepository interface {
+		CreateTransaction(ctx context.Context, txEntity *domain.Transaction) error
+	}
 
-type DBTransactionRepository struct {
-	DB *sql.DB
-}
+	DBTransactionRepository struct {
+		DB *sql.DB
+	}
+)
 
 func NewTransactionRepository(db *sql.DB) *DBTransactionRepository {
 	return &DBTransactionRepository{DB: db}

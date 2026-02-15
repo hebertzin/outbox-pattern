@@ -5,27 +5,31 @@ import (
 	"net/http"
 
 	"transaction-service/internal/usecase"
+
+	"github.com/gorilla/mux"
 )
 
-type CreateTransactionHandler struct {
-	uc usecase.CreateTransactionExecutor
-	BaseHandler
-}
+type (
+	CreateTransactionHandler struct {
+		uc usecase.CreateTransactionExecutor
+		BaseHandler
+	}
+
+	createTransactionRequest struct {
+		Amount      int64  `json:"amount"`
+		Description string `json:"description"`
+		FromUserId  string `json:"fromUserId"`
+		ToUserId    string `json:"toUserId"`
+	}
+
+	createTransactionResponse struct {
+		TransactionID string `json:"transactionId"`
+		Status        string `json:"status"`
+	}
+)
 
 func NewCreateTransactionHandler(uc usecase.CreateTransactionExecutor) *CreateTransactionHandler {
 	return &CreateTransactionHandler{uc: uc}
-}
-
-type createTransactionRequest struct {
-	Amount      int64  `json:"amount"`
-	Description string `json:"description"`
-	FromUserId  string `json:"fromUserId"`
-	ToUserId    string `json:"toUserId"`
-}
-
-type createTransactionResponse struct {
-	TransactionID string `json:"transactionId"`
-	Status        string `json:"status"`
 }
 
 func (h *CreateTransactionHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -57,8 +61,9 @@ func (h *CreateTransactionHandler) Create(w http.ResponseWriter, r *http.Request
 
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+func (h *CreateTransactionHandler) RegisterRoutes(router *mux.Router) {
+	api := router.PathPrefix("/api/v1").Subrouter()
+	api.HandleFunc("/transactions", h.Create).
+		Methods(http.MethodPost).
+		Name("CreateTransaction")
 }
