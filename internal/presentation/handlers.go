@@ -56,9 +56,3 @@ func (h *CreateTransactionHandler) Create(w http.ResponseWriter, r *http.Request
 	h.RespondWithSuccess(w, http.StatusCreated, "transaction created", result)
 
 }
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
