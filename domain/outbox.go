@@ -1,4 +1,4 @@
-package entity
+package domain
 
 type Outbox struct {
 	Id      string `json:"id"`
