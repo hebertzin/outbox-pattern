@@ -44,8 +44,7 @@ Repository Layer (Infrastructure)
 ```
 
 
-<img width="5810" height="1983" alt="OUTRA ARQUITETURA" src="https://github.com/user-attachments/assets/e53ca23d-1d1c-492f-a8f7-717e25559486" />
-
+<img width="5810" height="1983" alt="ARQUTEITURA OUTIBOXI" src="https://github.com/user-attachments/assets/fab16128-63bb-4709-9585-0d63b4912d68" />
 
 ---
 
