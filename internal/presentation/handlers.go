@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"transaction-service/internal/usecase"
+
+	"github.com/gorilla/mux"
 )
 
 type CreateTransactionHandler struct {
@@ -55,4 +57,11 @@ func (h *CreateTransactionHandler) Create(w http.ResponseWriter, r *http.Request
 
 	h.RespondWithSuccess(w, http.StatusCreated, "transaction created", result)
 
+}
+
+func (h *CreateTransactionHandler) RegisterRoutes(router *mux.Router) {
+	api := router.PathPrefix("/api/v1").Subrouter()
+	api.HandleFunc("/transactions", h.Create).
+		Methods(http.MethodPost).
+		Name("CreateTransaction")
 }
