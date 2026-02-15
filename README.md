@@ -1,4 +1,4 @@
-# Transaction Service — Outbox Pattern Implementation
+# Transaction Service with Outbox Pattern Implementation
 
 A production-grade transaction service built in Go, designed to ensure **data consistency, reliability, and scalability** using the **Outbox Pattern**.
 
