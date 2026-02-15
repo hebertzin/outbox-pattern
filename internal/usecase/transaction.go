@@ -10,6 +10,10 @@ import (
 	"transaction-service/internal/infra"
 )
 
+type CreateTransactionExecutor interface {
+	Execute(ctx context.Context, in CreateTransactionInput) (*CreateTransactionOutput, *infra.Exception)
+}
+
 type CreateTransactionUseCase struct {
 	repo infra.TransactionRepository
 }
