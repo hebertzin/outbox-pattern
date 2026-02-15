@@ -18,6 +18,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// @title           Transaction Service API
+// @version         1.0
+// @description     API for creating transactions using Outbox Pattern.
+// @BasePath        /api/v1
 func main() {
 	db := connectDatabase()
 	defer db.Close()
