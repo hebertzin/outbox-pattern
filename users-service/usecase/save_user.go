@@ -2,8 +2,10 @@ package usecase
 
 import (
 	"context"
+	"net/http"
 	"users-services/domain/entity"
 	"users-services/infra/db/repository"
+	"users-services/infra/errors"
 )
 
 type CreateUserUseCase struct {
@@ -11,20 +13,18 @@ type CreateUserUseCase struct {
 }
 
 type UserUseCase interface {
-	Execute(ctx context.Context, user *entity.User) (string, error)
+	Execute(ctx context.Context, user *entity.User) (string, *errors.Exception)
 }
 
 func NewCreateUserUseCase(repo repository.UserRepository) *CreateUserUseCase {
 	return &CreateUserUseCase{repo: repo}
 }
 
-func (u *CreateUserUseCase) Execute(ctx context.Context, user *entity.User) (string, error) {
+func (u *CreateUserUseCase) Execute(ctx context.Context, user *entity.User) (string, *errors.Exception) {
 	id, err := u.repo.Insert(ctx, user)
 	if err != nil {
-		return "", err
+		return "", errors.BadRequest(errors.WithCode(http.StatusBadRequest), errors.WithMessage("some error has been ocurred"))
 	}
 
-	// Outbox Pattern: o evento "UserCreated" já foi gravado no banco junto do usuário.
-	// Um worker separado lê a outbox e publica no broker.
 	return id, nil
 }
