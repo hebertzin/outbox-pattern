@@ -10,14 +10,16 @@ var (
 	DriverName         = "postgres"
 )
 
-type DatabaseConnection struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-	DB       *sql.DB
-}
+type (
+	DatabaseConnection struct {
+		Host     string
+		Port     int
+		User     string
+		Password string
+		DBName   string
+		DB       *sql.DB
+	}
+)
 
 func NewDatabaseConnection(
 	host string,

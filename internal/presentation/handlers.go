@@ -9,25 +9,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type CreateTransactionHandler struct {
-	uc usecase.CreateTransactionExecutor
-	BaseHandler
-}
+type (
+	CreateTransactionHandler struct {
+		uc usecase.CreateTransactionExecutor
+		BaseHandler
+	}
+
+	createTransactionRequest struct {
+		Amount      int64  `json:"amount"`
+		Description string `json:"description"`
+		FromUserId  string `json:"fromUserId"`
+		ToUserId    string `json:"toUserId"`
+	}
+
+	createTransactionResponse struct {
+		TransactionID string `json:"transactionId"`
+		Status        string `json:"status"`
+	}
+)
 
 func NewCreateTransactionHandler(uc usecase.CreateTransactionExecutor) *CreateTransactionHandler {
 	return &CreateTransactionHandler{uc: uc}
-}
-
-type createTransactionRequest struct {
-	Amount      int64  `json:"amount"`
-	Description string `json:"description"`
-	FromUserId  string `json:"fromUserId"`
-	ToUserId    string `json:"toUserId"`
-}
-
-type createTransactionResponse struct {
-	TransactionID string `json:"transactionId"`
-	Status        string `json:"status"`
 }
 
 func (h *CreateTransactionHandler) Create(w http.ResponseWriter, r *http.Request) {

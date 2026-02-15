@@ -10,28 +10,30 @@ import (
 	"transaction-service/internal/infra"
 )
 
-type CreateTransactionExecutor interface {
-	Execute(ctx context.Context, in CreateTransactionInput) (*CreateTransactionOutput, *infra.Exception)
-}
+type (
+	CreateTransactionExecutor interface {
+		Execute(ctx context.Context, in CreateTransactionInput) (*CreateTransactionOutput, *infra.Exception)
+	}
 
-type CreateTransactionUseCase struct {
-	repo infra.TransactionRepository
-}
+	CreateTransactionUseCase struct {
+		repo infra.TransactionRepository
+	}
+
+	CreateTransactionInput struct {
+		Amount      int64
+		Description string
+		FromUserId  string
+		ToUserId    string
+	}
+
+	CreateTransactionOutput struct {
+		TransactionID string
+		Status        string
+	}
+)
 
 func NewCreateTransactionUseCase(repo infra.TransactionRepository) *CreateTransactionUseCase {
 	return &CreateTransactionUseCase{repo: repo}
-}
-
-type CreateTransactionInput struct {
-	Amount      int64
-	Description string
-	FromUserId  string
-	ToUserId    string
-}
-
-type CreateTransactionOutput struct {
-	TransactionID string
-	Status        string
 }
 
 func (u *CreateTransactionUseCase) Execute(

@@ -1,10 +1,12 @@
 package infra
 
-type Exception struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Err     string `json:"error,omitempty"`
-}
+type (
+	Exception struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Err     string `json:"error,omitempty"`
+	}
+)
 
 func (e *Exception) Error() string {
 	return e.Message
