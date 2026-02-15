@@ -8,19 +8,15 @@ import (
 	"users-services/infra/errors"
 )
 
-type CreateUserUseCase struct {
+type UserUseCase struct {
 	repo repository.UserRepository
 }
 
-type UserUseCase interface {
-	Execute(ctx context.Context, user *entity.User) (string, *errors.Exception)
+func NewCreateUserUseCase(repo repository.UserRepository) *UserUseCase {
+	return &UserUseCase{repo: repo}
 }
 
-func NewCreateUserUseCase(repo repository.UserRepository) *CreateUserUseCase {
-	return &CreateUserUseCase{repo: repo}
-}
-
-func (u *CreateUserUseCase) Execute(ctx context.Context, user *entity.User) (string, *errors.Exception) {
+func (u *UserUseCase) Execute(ctx context.Context, user *entity.User) (string, *errors.Exception) {
 	id, err := u.repo.Insert(ctx, user)
 	if err != nil {
 		return "", errors.BadRequest(errors.WithCode(http.StatusBadRequest), errors.WithMessage("some error has been ocurred"))
