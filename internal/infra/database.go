@@ -11,7 +11,12 @@ var (
 )
 
 type DatabaseConnection struct {
-	DB *sql.DB
+	Host     string
+	Port     int
+	User     string
+	Password string
+	DBName   string
+	DB       *sql.DB
 }
 
 func NewDatabaseConnection(
@@ -20,29 +25,37 @@ func NewDatabaseConnection(
 	user string,
 	password string,
 	dbname string,
-) (*DatabaseConnection, error) {
+) *DatabaseConnection {
+	return &DatabaseConnection{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: password,
+		DBName:   dbname,
+	}
+}
 
+func (d *DatabaseConnection) Connect() error {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host,
-		port,
-		user,
-		password,
-		dbname,
+		d.Host,
+		d.Port,
+		d.User,
+		d.Password,
+		d.DBName,
 	)
 
 	db, err := sql.Open(DriverName, dsn)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	db.SetMaxOpenConns(MaxConnectionsOpen)
-	err = db.Ping()
-	if err != nil {
-		return nil, err
+	if err := db.Ping(); err != nil {
+		return err
 	}
 
-	return &DatabaseConnection{
-		DB: db,
-	}, nil
+	d.DB = db
+
+	return nil
 }
