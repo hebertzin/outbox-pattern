@@ -33,10 +33,10 @@ func NewTransactionMessageHandler(b *broker.RabbitMQ) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /transactions", h.handleError(h.Handle))
+	mux.HandleFunc("POST /transactions", h.handleError(h.handle))
 }
 
-func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) handle(w http.ResponseWriter, r *http.Request) error {
 	var (
 		req         transactionRequest
 		aggregateID uuid.UUID
