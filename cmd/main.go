@@ -2,20 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 	"transaction-service/internal/core/broker"
 	"transaction-service/internal/core/httphandler/messagehandler"
-
-	"transaction-service/internal/infra"
-	"transaction-service/internal/presentation"
-	"transaction-service/internal/usecase"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -26,9 +20,6 @@ import (
 // @description     API for creating transactions using Outbox Pattern.
 // @BasePath        /api/v1
 func main() {
-	db := connectDatabase()
-	defer db.Close()
-
 	rabbitMq := broker.NewRabbitMQ("")
 
 	serveMux := http.NewServeMux()
@@ -74,31 +65,4 @@ func registerTransactionRoutes(mux *http.ServeMux, b *broker.RabbitMQ) {
 	handler := messagehandler.NewTransactionMessageHandler(b)
 
 	handler.RegisterRoutes(mux)
-}
-
-func connectDatabase() *sql.DB {
-	host := os.Getenv("DB_HOST")
-	portStr := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		log.Fatalf("invalid DB_PORT: %v", err)
-	}
-
-	dbConn := infra.NewDatabaseConnection(
-		host,
-		port,
-		user,
-		password,
-		dbName,
-	)
-
-	if err := dbConn.Connect(); err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-
-	return dbConn.DB
 }
