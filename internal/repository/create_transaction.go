@@ -8,10 +8,6 @@ import (
 )
 
 type (
-	TransactionRepository interface {
-		CreateTransaction(ctx context.Context, txEntity *domain.Transaction) error
-	}
-
 	DBTransactionRepository struct {
 		DB *sql.DB
 	}
@@ -69,7 +65,6 @@ func (r *DBTransactionRepository) CreateTransaction(ctx context.Context, txEntit
 
 	outboxID := txEntity.Id
 
-	// Save the event in the outbox table with status "PENDING" so it can be processed later by a worker and published to a message queue.
 	outboxQuery := `
 	INSERT INTO outbox (
 		id,
