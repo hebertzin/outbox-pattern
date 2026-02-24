@@ -1,4 +1,4 @@
-package presentation
+package httphandler
 
 import (
 	"encoding/json"
@@ -6,13 +6,13 @@ import (
 )
 
 type (
-	HttpResponse struct {
+	httpResponse struct {
 		Code    int         `json:"code"`
 		Message string      `json:"message"`
 		Data    interface{} `json:"data,omitempty"`
 	}
 
-	ErrorResponse struct {
+	errorResponse struct {
 		Title    string `json:"title"`
 		Status   int    `json:"status"`
 		Detail   string `json:"detail,omitempty"`
@@ -26,7 +26,7 @@ func (b *BaseHandler) RespondWithError(w http.ResponseWriter, r *http.Request, s
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	resp := ErrorResponse{
+	resp := errorResponse{
 		Title:    title,
 		Status:   status,
 		Detail:   detail,
@@ -40,7 +40,7 @@ func (b *BaseHandler) RespondWithSuccess(w http.ResponseWriter, code int, messag
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
-	resp := HttpResponse{
+	resp := httpResponse{
 		Code:    code,
 		Message: message,
 		Data:    data,

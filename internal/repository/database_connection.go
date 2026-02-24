@@ -1,4 +1,4 @@
-package infra
+package repository
 
 import (
 	"database/sql"
@@ -12,12 +12,12 @@ var (
 
 type (
 	DatabaseConnection struct {
-		Host     string
-		Port     int
-		User     string
-		Password string
-		DBName   string
-		DB       *sql.DB
+		host     string
+		port     int
+		user     string
+		password string
+		dbName   string
+		db       *sql.DB
 	}
 )
 
@@ -29,22 +29,22 @@ func NewDatabaseConnection(
 	dbname string,
 ) *DatabaseConnection {
 	return &DatabaseConnection{
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Password: password,
-		DBName:   dbname,
+		host:     host,
+		port:     port,
+		user:     user,
+		password: password,
+		dbName:   dbname,
 	}
 }
 
 func (d *DatabaseConnection) Connect() error {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		d.Host,
-		d.Port,
-		d.User,
-		d.Password,
-		d.DBName,
+		d.host,
+		d.port,
+		d.user,
+		d.password,
+		d.dbName,
 	)
 
 	db, err := sql.Open(DriverName, dsn)
@@ -57,7 +57,7 @@ func (d *DatabaseConnection) Connect() error {
 		return err
 	}
 
-	d.DB = db
+	d.db = db
 
 	return nil
 }
