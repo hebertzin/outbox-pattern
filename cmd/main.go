@@ -22,6 +22,8 @@ import (
 func main() {
 	rabbitMq := broker.NewRabbitMQ("")
 
+	rabbitMq.Connect()
+
 	serveMux := http.NewServeMux()
 
 	srv := &http.Server{
