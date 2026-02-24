@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"net/http"
+	"transaction-service/internal/errors"
 
 	"github.com/google/uuid"
 
@@ -12,7 +13,7 @@ import (
 
 type (
 	CreateTransactionExecutor interface {
-		Execute(ctx context.Context, in CreateTransactionInput) (*CreateTransactionOutput, *infra.Exception)
+		Execute(ctx context.Context, in CreateTransactionInput) (*CreateTransactionOutput, *errors.Exception)
 	}
 
 	CreateTransactionUseCase struct {
@@ -39,39 +40,39 @@ func NewCreateTransactionUseCase(repo infra.TransactionRepository) *CreateTransa
 func (u *CreateTransactionUseCase) Execute(
 	ctx context.Context,
 	in CreateTransactionInput,
-) (*CreateTransactionOutput, *infra.Exception) {
+) (*CreateTransactionOutput, *errors.Exception) {
 	if in.Amount <= 0 {
-		return nil, infra.BadRequest(
-			infra.WithCode(http.StatusBadRequest),
-			infra.WithMessage("amount must be greater than zero"),
+		return nil, errors.BadRequest(
+			errors.WithCode(http.StatusBadRequest),
+			errors.WithMessage("amount must be greater than zero"),
 		)
 	}
 
 	if in.FromUserId == "" {
-		return nil, infra.BadRequest(
-			infra.WithCode(http.StatusBadRequest),
-			infra.WithMessage("fromUserId is required"),
+		return nil, errors.BadRequest(
+			errors.WithCode(http.StatusBadRequest),
+			errors.WithMessage("fromUserId is required"),
 		)
 	}
 
 	if in.ToUserId == "" {
-		return nil, infra.BadRequest(
-			infra.WithCode(http.StatusBadRequest),
-			infra.WithMessage("toUserId is required"),
+		return nil, errors.BadRequest(
+			errors.WithCode(http.StatusBadRequest),
+			errors.WithMessage("toUserId is required"),
 		)
 	}
 
 	if in.FromUserId == in.ToUserId {
-		return nil, infra.BadRequest(
-			infra.WithCode(http.StatusBadRequest),
-			infra.WithMessage("cannot create a transaction to the same user"),
+		return nil, errors.BadRequest(
+			errors.WithCode(http.StatusBadRequest),
+			errors.WithMessage("cannot create a transaction to the same user"),
 		)
 	}
 
 	if in.Description == "" {
-		return nil, infra.BadRequest(
-			infra.WithCode(http.StatusBadRequest),
-			infra.WithMessage("description is required"),
+		return nil, errors.BadRequest(
+			errors.WithCode(http.StatusBadRequest),
+			errors.WithMessage("description is required"),
 		)
 	}
 
@@ -87,9 +88,9 @@ func (u *CreateTransactionUseCase) Execute(
 	}
 
 	if err := u.repo.CreateTransaction(ctx, txEntity); err != nil {
-		return nil, infra.Unexpected(
-			infra.WithCode(http.StatusInternalServerError),
-			infra.WithMessage("failed to create transaction"),
+		return nil, errors.Unexpected(
+			errors.WithCode(http.StatusInternalServerError),
+			errors.WithMessage("failed to create transaction"),
 		)
 	}
 
