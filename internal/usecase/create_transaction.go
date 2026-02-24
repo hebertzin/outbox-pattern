@@ -1,8 +1,13 @@
 package usecase
 
+import (
+	"context"
+	"transaction-service/internal/domain"
+)
+
 type (
 	createTransactionFeature interface {
-		CreateTransaction() error
+		CreateTransaction(ctx context.Context, input domain.Transaction) (*domain.Transaction, error)
 	}
 
 	CreateTransactionUseCase struct {
@@ -14,11 +19,12 @@ func NewCreateTransaction(feature createTransactionFeature) *CreateTransactionUs
 	return &CreateTransactionUseCase{feature: feature}
 }
 
-func (uc *CreateTransactionUseCase) CreateTransaction() error {
-	err := uc.feature.CreateTransaction()
+func (uc *CreateTransactionUseCase) CreateTransaction(ctx context.Context, input domain.Transaction) (string, error) {
+	// here have to be a producer
+	res, err := uc.feature.CreateTransaction(ctx, input)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return res.Id, nil
 }
