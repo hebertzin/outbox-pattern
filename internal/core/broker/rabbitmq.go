@@ -7,17 +7,17 @@ import (
 type RabbitMQ struct {
 	Connection *amqp.Connection
 	Channel    *amqp.Channel
-	Url        string
+	URL        string
 }
 
 func NewRabbitMQ(url string) *RabbitMQ {
 	return &RabbitMQ{
-		Url: url,
+		URL: url,
 	}
 }
 
 func (r *RabbitMQ) Connect() (*amqp.Connection, *amqp.Channel) {
-	connection, err := amqp.Dial(r.Url)
+	connection, err := amqp.Dial(r.URL)
 	if err != nil {
 		panic(err)
 	}
