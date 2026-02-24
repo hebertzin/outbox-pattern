@@ -2,9 +2,10 @@ package broker
 
 import (
 	"context"
-	"encoding/json"
-	"log"
+	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -22,29 +23,32 @@ func NewPublisher(rabbitMq *RabbitMQ, exchange string, routingKey string) *Publi
 	}
 }
 
-func (p *Publisher) Publish(ctx context.Context, body []byte) error {
-	for _, data := range body {
-		bytes, err := json.Marshal(data)
-		if err != nil {
-			log.Fatal(err)
-		}
+func (p *Publisher) Publish(ctx context.Context, body []byte, aggregateID string) error {
+	correlationID, _ := ctx.Value("correlation_id").(string)
+	if correlationID == "" {
+		correlationID = uuid.NewString()
+	}
 
-		err = p.rabbitMq.Channel.PublishWithContext(
-			ctx,
-			p.exchange,
-			p.routingKey,
-			true,
-			false,
-			amqp.Publishing{
-				ContentType:  "application/json",
-				Body:         bytes,
-				DeliveryMode: amqp.Persistent,
+	err := p.rabbitMq.Channel.PublishWithContext(
+		ctx,
+		p.exchange,
+		p.routingKey,
+		true,
+		false,
+		amqp.Publishing{
+			ContentType:   "application/json",
+			Body:          body,
+			DeliveryMode:  amqp.Persistent,
+			MessageId:     uuid.NewString(),
+			CorrelationId: correlationID,
+			Timestamp:     time.Now().UTC(),
+			Headers: amqp.Table{
+				"aggregate_id": aggregateID,
 			},
-		)
-
-		if err != nil {
-			log.Fatal(err)
-		}
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("publish: %w", err)
 	}
 
 	return nil

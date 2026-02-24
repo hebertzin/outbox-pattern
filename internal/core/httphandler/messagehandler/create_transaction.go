@@ -6,14 +6,6 @@ import (
 	"transaction-service/internal/core/broker"
 )
 
-func NewTransactionMessageHandler(b *broker.RabbitMQ) *Handler {
-	pub := broker.NewPublisher(b, "transactions", "transaction.created")
-
-	return &Handler{
-		pub: pub,
-	}
-}
-
 type (
 	Handler struct {
 		pub *broker.Publisher
@@ -26,9 +18,18 @@ type (
 	}
 )
 
+func NewTransactionMessageHandler(b *broker.RabbitMQ) *Handler {
+	pub := broker.NewPublisher(b, "transactions", "transaction.created")
+
+	return &Handler{
+		pub: pub,
+	}
+}
+
 func (handler *Handler) handle(w http.ResponseWriter, r *http.Request) error {
 	var (
-		req messageEnvelope
+		req         messageEnvelope
+		aggregateID string
 	)
 
 	b, err := json.Marshal(req)
@@ -36,7 +37,7 @@ func (handler *Handler) handle(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err = handler.pub.Publish(r.Context(), b)
+	err = handler.pub.Publish(r.Context(), b, aggregateID)
 	if err != nil {
 		return err
 	}
