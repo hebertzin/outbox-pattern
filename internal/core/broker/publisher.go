@@ -23,12 +23,7 @@ func NewPublisher(rabbitMq *RabbitMQ, exchange string, routingKey string) *Publi
 	}
 }
 
-func (p *Publisher) Publish(ctx context.Context, body []byte, aggregateID string) error {
-	correlationID, _ := ctx.Value("correlation_id").(string)
-	if correlationID == "" {
-		correlationID = uuid.NewString()
-	}
-
+func (p *Publisher) Publish(ctx context.Context, body []byte, aggregateID uuid.UUID) error {
 	err := p.rabbitMq.Channel.PublishWithContext(
 		ctx,
 		p.exchange,
@@ -36,12 +31,11 @@ func (p *Publisher) Publish(ctx context.Context, body []byte, aggregateID string
 		true,
 		false,
 		amqp.Publishing{
-			ContentType:   "application/json",
-			Body:          body,
-			DeliveryMode:  amqp.Persistent,
-			MessageId:     uuid.NewString(),
-			CorrelationId: correlationID,
-			Timestamp:     time.Now().UTC(),
+			ContentType:  "application/json",
+			Body:         body,
+			DeliveryMode: amqp.Persistent,
+			MessageId:    uuid.NewString(),
+			Timestamp:    time.Now().UTC(),
 			Headers: amqp.Table{
 				"aggregate_id": aggregateID,
 			},

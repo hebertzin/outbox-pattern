@@ -29,7 +29,6 @@ func (b *BaseHandler) RespondWithError(w http.ResponseWriter, r *http.Request, s
 	resp := errorResponse{
 		Title:    title,
 		Status:   status,
-		Detail:   detail,
 		Instance: r.URL.String(),
 	}
 
