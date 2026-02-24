@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+	"transaction-service/internal/core/broker"
+	"transaction-service/internal/core/httphandler/messagehandler"
 
 	"transaction-service/internal/infra"
 	"transaction-service/internal/presentation"
@@ -27,14 +29,16 @@ func main() {
 	db := connectDatabase()
 	defer db.Close()
 
-	router := registerTransactionRoutes(db)
+	rabbitMq := broker.NewRabbitMQ("")
 
-	registerSwagger(router)
+	serveMux := http.NewServeMux()
 
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: router,
+		Handler: serveMux,
 	}
+
+	registerTransactionRoutes(serveMux, rabbitMq)
 
 	go func() {
 		log.Println("server running on :8080")
@@ -66,19 +70,10 @@ func registerSwagger(router *mux.Router) {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }
 
-func registerTransactionRoutes(db *sql.DB) *mux.Router {
-	router := mux.NewRouter()
-	transactionHandler := transactionFactory(db)
-	transactionHandler.RegisterRoutes(router)
-	return router
-}
+func registerTransactionRoutes(mux *http.ServeMux, b *broker.RabbitMQ) {
+	handler := messagehandler.NewTransactionMessageHandler(b)
 
-func transactionFactory(db *sql.DB) *presentation.CreateTransactionHandler {
-	r := infra.NewTransactionRepository(db)
-	u := usecase.NewCreateTransactionUseCase(r)
-	h := presentation.NewCreateTransactionHandler(u)
-
-	return h
+	handler.RegisterRoutes(mux)
 }
 
 func connectDatabase() *sql.DB {

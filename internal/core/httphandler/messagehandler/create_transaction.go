@@ -43,13 +43,13 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) error {
 	)
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload", "")
+		h.RespondWithError(w, r, http.StatusBadRequest, "Invalid request payload")
 		return nil
 	}
 
 	aggregateID, err := uuid.NewUUID()
 	if err != nil {
-		h.RespondWithError(w, r, http.StatusBadRequest, "error generating aggregate ID", "")
+		h.RespondWithError(w, r, http.StatusBadRequest, "error generating aggregate ID")
 	}
 
 	payload, err := json.Marshal(req)
@@ -68,7 +68,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) error {
 func (h *Handler) handleError(fn func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
-			h.RespondWithError(w, r, http.StatusInternalServerError, err.Error(), "")
+			h.RespondWithError(w, r, http.StatusInternalServerError, err.Error())
 		}
 	}
 }

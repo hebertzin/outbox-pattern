@@ -15,14 +15,13 @@ type (
 	errorResponse struct {
 		Title    string `json:"title"`
 		Status   int    `json:"status"`
-		Detail   string `json:"detail,omitempty"`
 		Instance string `json:"instance,omitempty"`
 	}
 
 	BaseHandler struct{}
 )
 
-func (b *BaseHandler) RespondWithError(w http.ResponseWriter, r *http.Request, status int, title string, detail string) {
+func (b *BaseHandler) RespondWithError(w http.ResponseWriter, r *http.Request, status int, title string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
