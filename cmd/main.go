@@ -2,18 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
-
-	"transaction-service/internal/infra"
-	"transaction-service/internal/presentation"
-	"transaction-service/internal/usecase"
+	"transaction-service/internal/core/broker"
+	"transaction-service/internal/core/httphandler/messagehandler"
 
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -24,17 +20,16 @@ import (
 // @description     API for creating transactions using Outbox Pattern.
 // @BasePath        /api/v1
 func main() {
-	db := connectDatabase()
-	defer db.Close()
+	rabbitMq := broker.NewRabbitMQ("")
 
-	router := registerTransactionRoutes(db)
-
-	registerSwagger(router)
+	serveMux := http.NewServeMux()
 
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: router,
+		Handler: serveMux,
 	}
+
+	registerTransactionRoutes(serveMux, rabbitMq)
 
 	go func() {
 		log.Println("server running on :8080")
@@ -66,44 +61,8 @@ func registerSwagger(router *mux.Router) {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }
 
-func registerTransactionRoutes(db *sql.DB) *mux.Router {
-	router := mux.NewRouter()
-	transactionHandler := transactionFactory(db)
-	transactionHandler.RegisterRoutes(router)
-	return router
-}
+func registerTransactionRoutes(mux *http.ServeMux, b *broker.RabbitMQ) {
+	handler := messagehandler.NewTransactionMessageHandler(b)
 
-func transactionFactory(db *sql.DB) *presentation.CreateTransactionHandler {
-	r := infra.NewTransactionRepository(db)
-	u := usecase.NewCreateTransactionUseCase(r)
-	h := presentation.NewCreateTransactionHandler(u)
-
-	return h
-}
-
-func connectDatabase() *sql.DB {
-	host := os.Getenv("DB_HOST")
-	portStr := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		log.Fatalf("invalid DB_PORT: %v", err)
-	}
-
-	dbConn := infra.NewDatabaseConnection(
-		host,
-		port,
-		user,
-		password,
-		dbName,
-	)
-
-	if err := dbConn.Connect(); err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-
-	return dbConn.DB
+	handler.RegisterRoutes(mux)
 }

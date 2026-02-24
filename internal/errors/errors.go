@@ -1,4 +1,4 @@
-package infra
+package errors
 
 type (
 	Exception struct {
