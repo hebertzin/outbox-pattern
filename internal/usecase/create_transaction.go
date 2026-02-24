@@ -16,11 +16,12 @@ type (
 )
 
 func NewCreateTransaction(feature createTransactionFeature) *CreateTransactionUseCase {
-	return &CreateTransactionUseCase{feature: feature}
+	return &CreateTransactionUseCase{
+		feature: feature,
+	}
 }
 
 func (uc *CreateTransactionUseCase) CreateTransaction(ctx context.Context, input domain.Transaction) (string, error) {
-	// here have to be a producer
 	res, err := uc.feature.CreateTransaction(ctx, input)
 	if err != nil {
 		return "", err
