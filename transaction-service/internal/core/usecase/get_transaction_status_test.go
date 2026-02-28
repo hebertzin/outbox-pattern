@@ -19,7 +19,7 @@ func TestGetTransactionStatusUseCase_Success(t *testing.T) {
 			}, nil
 		},
 	}
-	uc := usecase.NewGetTransactionStatusUseCase(repo)
+	uc := usecase.NewGetTransactionStatusUseCase(repo, testLogger())
 
 	out, err := uc.Execute(context.Background(), "tx-1")
 
@@ -40,7 +40,7 @@ func TestGetTransactionStatusUseCase_NotFound(t *testing.T) {
 			return nil, nil
 		},
 	}
-	uc := usecase.NewGetTransactionStatusUseCase(repo)
+	uc := usecase.NewGetTransactionStatusUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), "tx-unknown")
 
@@ -53,7 +53,7 @@ func TestGetTransactionStatusUseCase_RepositoryError(t *testing.T) {
 			return nil, errors.New("db error")
 		},
 	}
-	uc := usecase.NewGetTransactionStatusUseCase(repo)
+	uc := usecase.NewGetTransactionStatusUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), "tx-1")
 

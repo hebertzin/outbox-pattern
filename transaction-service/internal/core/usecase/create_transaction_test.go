@@ -3,6 +3,8 @@ package usecase_test
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"testing"
 
@@ -10,6 +12,10 @@ import (
 	apperrors "transaction-service/internal/core/errors"
 	"transaction-service/internal/core/usecase"
 )
+
+func testLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
 
 type mockTransactionRepository struct {
 	createFn               func(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error
@@ -60,7 +66,7 @@ func assertException(t *testing.T, err error, expectedCode int) *apperrors.Excep
 
 func TestCreateTransactionUseCase_Success(t *testing.T) {
 	repo := &mockTransactionRepository{}
-	uc := usecase.NewCreateTransactionUseCase(repo)
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 	out, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID:  "user-1",
@@ -89,7 +95,7 @@ func TestCreateTransactionUseCase_SavesOutboxEvent(t *testing.T) {
 			return nil
 		},
 	}
-	uc := usecase.NewCreateTransactionUseCase(repo)
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "user-1",
@@ -113,7 +119,7 @@ func TestCreateTransactionUseCase_SavesOutboxEvent(t *testing.T) {
 
 func TestCreateTransactionUseCase_SameUser(t *testing.T) {
 	repo := &mockTransactionRepository{}
-	uc := usecase.NewCreateTransactionUseCase(repo)
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "user-1",
@@ -131,7 +137,7 @@ func TestCreateTransactionUseCase_InvalidAmount(t *testing.T) {
 	cases := []int64{0, -1, -100}
 	for _, amount := range cases {
 		repo := &mockTransactionRepository{}
-		uc := usecase.NewCreateTransactionUseCase(repo)
+		uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 		_, err := uc.Execute(context.Background(), usecase.CreateInput{
 			FromUserID: "user-1",
@@ -152,7 +158,7 @@ func TestCreateTransactionUseCase_RepositoryError(t *testing.T) {
 			return errors.New("db error")
 		},
 	}
-	uc := usecase.NewCreateTransactionUseCase(repo)
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "user-1",
@@ -173,7 +179,7 @@ func TestCreateTransactionUseCase_IdempotencyKeyReturnsExisting(t *testing.T) {
 			return existing, nil
 		},
 	}
-	uc := usecase.NewCreateTransactionUseCase(repo)
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 	out, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID:     "user-1",
@@ -201,7 +207,7 @@ func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T)
 			return nil
 		},
 	}
-	uc := usecase.NewCreateTransactionUseCase(repo)
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
 
 	_, _ = uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "",

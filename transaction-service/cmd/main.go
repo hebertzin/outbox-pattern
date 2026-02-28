@@ -59,12 +59,7 @@ func main() {
 	logger.Info("connected to rabbitmq")
 
 	txRepo := repository.NewTransactionRepository(db)
-
-	createUC := usecase.NewCreateTransactionUseCase(txRepo)
-	statusUC := usecase.NewGetTransactionStatusUseCase(txRepo)
-	balanceUC := usecase.NewGetBalanceUseCase(txRepo)
-
-	txHandler := handler.NewHandler(createUC, statusUC, balanceUC)
+	txHandler := handler.NewHandlerFactory(usecase.NewFactory(txRepo, logger))
 
 	mux := http.NewServeMux()
 	txHandler.RegisterRoutes(mux)
