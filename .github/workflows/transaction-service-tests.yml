@@ -5,10 +5,12 @@ on:
     branches: [main, staging]
     paths:
       - "transaction-service/**"
+      - ".github/workflows/transaction-service-tests.yml"
   pull_request:
     branches: [main, staging]
     paths:
       - "transaction-service/**"
+      - ".github/workflows/transaction-service-tests.yml"
 
 defaults:
   run:
