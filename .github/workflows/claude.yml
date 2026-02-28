@@ -43,6 +43,9 @@ jobs:
             You are reviewing a pull request in a Go monorepo (outbox-pattern).
             The project uses clean/hexagonal architecture with two services: users-service and transaction-service.
 
+            PR description from the author:
+            ${{ github.event.pull_request.body }}
+
             Please review the changes in this PR and provide feedback on:
             - Correctness and potential bugs
             - Go idiomatic code and best practices
@@ -52,5 +55,6 @@ jobs:
             - Security concerns (SQL injection, input validation, etc.)
             - Performance issues
 
+            If the PR description contains a "Notes for @claude" section, prioritize those areas.
             Post your review as a PR review with inline comments where applicable.
             Be concise and constructive. Only comment on changed files.

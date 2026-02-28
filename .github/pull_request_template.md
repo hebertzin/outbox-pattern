@@ -4,17 +4,19 @@ Briefly describe the changes introduced by this pull request.
 
 ## Type of Change
 
-Check the relevant options.
-
 - [ ] Bug fix
 - [ ] New functionality
 - [ ] Performance improvement
-- [ ] other
+- [ ] Refactoring
+- [ ] Other
 
 ## Verification
 
 - [ ] I checked for conflicts with the target branch
+- [ ] Tests pass locally
+- [ ] No linting errors
 
-## Additional comments
+## Notes for @claude
 
-Please provide any additional comments or relevant information.
+<!-- Optional: add specific context or areas you want Claude to focus on during the review. -->
+<!-- Example: "focus on the error handling in the use case layer" or "check if the outbox event payload is correct" -->
