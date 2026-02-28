@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: Transaction Service
+    orgId: 1
+    folder: Transaction Service
+    folderUid: transaction-service
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
