@@ -12,14 +12,14 @@ import (
 
 func TestGetTransactionStatusUseCase_Success(t *testing.T) {
 	repo := &mockTransactionRepository{
-		findByIDFn: func(ctx context.Context, id string) (*entity.Transaction, error) {
+		findByIDFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return &entity.Transaction{
 				ID:     "tx-1",
 				Status: entity.StatusPending,
 			}, nil
 		},
 	}
-	uc := usecase.NewGetTransactionStatusUseCase(repo)
+	uc := usecase.NewGetTransactionStatusUseCase(repo, testLogger())
 
 	out, err := uc.Execute(context.Background(), "tx-1")
 
@@ -36,11 +36,11 @@ func TestGetTransactionStatusUseCase_Success(t *testing.T) {
 
 func TestGetTransactionStatusUseCase_NotFound(t *testing.T) {
 	repo := &mockTransactionRepository{
-		findByIDFn: func(ctx context.Context, id string) (*entity.Transaction, error) {
+		findByIDFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return nil, nil
 		},
 	}
-	uc := usecase.NewGetTransactionStatusUseCase(repo)
+	uc := usecase.NewGetTransactionStatusUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), "tx-unknown")
 
@@ -49,11 +49,11 @@ func TestGetTransactionStatusUseCase_NotFound(t *testing.T) {
 
 func TestGetTransactionStatusUseCase_RepositoryError(t *testing.T) {
 	repo := &mockTransactionRepository{
-		findByIDFn: func(ctx context.Context, id string) (*entity.Transaction, error) {
+		findByIDFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return nil, errors.New("db error")
 		},
 	}
-	uc := usecase.NewGetTransactionStatusUseCase(repo)
+	uc := usecase.NewGetTransactionStatusUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), "tx-1")
 

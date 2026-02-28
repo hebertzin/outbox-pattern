@@ -100,7 +100,7 @@ func processEvent(ctx context.Context, logger *slog.Logger, repo ports.OutboxRep
 			slog.String("event_type", event.Type),
 			slog.String("error", err.Error()),
 		)
-		_ = repo.MarkFailed(ctx, event.ID)
+		_ = repo.MarkForRetry(ctx, event.ID)
 		return
 	}
 

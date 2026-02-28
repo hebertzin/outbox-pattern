@@ -11,11 +11,11 @@ import (
 
 func TestGetBalanceUseCase_Success(t *testing.T) {
 	repo := &mockTransactionRepository{
-		getBalanceFn: func(ctx context.Context, userID string) (int64, error) {
+		getBalanceFn: func(_ context.Context, _ string) (int64, error) {
 			return 1500, nil
 		},
 	}
-	uc := usecase.NewGetBalanceUseCase(repo)
+	uc := usecase.NewGetBalanceUseCase(repo, testLogger())
 
 	out, err := uc.Execute(context.Background(), usecase.BalanceInput{UserID: "user-1"})
 
@@ -32,7 +32,7 @@ func TestGetBalanceUseCase_Success(t *testing.T) {
 
 func TestGetBalanceUseCase_EmptyUserID(t *testing.T) {
 	repo := &mockTransactionRepository{}
-	uc := usecase.NewGetBalanceUseCase(repo)
+	uc := usecase.NewGetBalanceUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), usecase.BalanceInput{UserID: ""})
 
@@ -41,11 +41,11 @@ func TestGetBalanceUseCase_EmptyUserID(t *testing.T) {
 
 func TestGetBalanceUseCase_RepositoryError(t *testing.T) {
 	repo := &mockTransactionRepository{
-		getBalanceFn: func(ctx context.Context, userID string) (int64, error) {
+		getBalanceFn: func(_ context.Context, _ string) (int64, error) {
 			return 0, errors.New("db error")
 		},
 	}
-	uc := usecase.NewGetBalanceUseCase(repo)
+	uc := usecase.NewGetBalanceUseCase(repo, testLogger())
 
 	_, err := uc.Execute(context.Background(), usecase.BalanceInput{UserID: "user-1"})
 

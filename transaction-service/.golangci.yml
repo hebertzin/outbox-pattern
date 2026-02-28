@@ -16,7 +16,7 @@ linters:
     - bodyclose         # HTTP response bodies must be closed
     - misspell          # common English spelling mistakes in comments/strings
     - revive            # drop-in replacement for golint with extra rules
-    - exportloopref     # loop variable capture in closures (Go < 1.22)
+    - copyloopvar       # loop variable capture in closures (Go >= 1.22)
 
 linters-settings:
   errcheck:

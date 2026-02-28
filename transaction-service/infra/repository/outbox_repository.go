@@ -84,3 +84,15 @@ func (r *PostgresOutboxRepository) MarkFailed(ctx context.Context, id string) er
 	`, id)
 	return err
 }
+
+const maxRetries = 3
+
+func (r *PostgresOutboxRepository) MarkForRetry(ctx context.Context, id string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE outbox
+		SET status      = CASE WHEN retry_count + 1 >= $2 THEN 'FAILED' ELSE 'PENDING' END,
+		    retry_count = retry_count + 1
+		WHERE id = $1
+	`, id, maxRetries)
+	return err
+}

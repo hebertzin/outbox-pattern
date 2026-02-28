@@ -24,14 +24,15 @@ var (
 )
 
 type Transaction struct {
-	ID          string
-	Amount      int64
-	Description string
-	FromUserID  string
-	ToUserID    string
-	Status      TransactionStatus
-	CreatedAt   time.Time
-	ProcessedAt *time.Time
+	ID             string
+	Amount         int64
+	Description    string
+	FromUserID     string
+	ToUserID       string
+	Status         TransactionStatus
+	CreatedAt      time.Time
+	ProcessedAt    *time.Time
+	IdempotencyKey *string
 }
 
 func NewTransaction(fromUserID, toUserID string, amount int64, description string) (*Transaction, error) {

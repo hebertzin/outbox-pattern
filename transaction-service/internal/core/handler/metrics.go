@@ -30,7 +30,6 @@ var (
 	)
 )
 
-// statusRecorder wraps http.ResponseWriter to capture the written status code.
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
@@ -41,7 +40,6 @@ func (sr *statusRecorder) WriteHeader(code int) {
 	sr.ResponseWriter.WriteHeader(code)
 }
 
-// MetricsMiddleware records Prometheus metrics for every HTTP request.
 func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
