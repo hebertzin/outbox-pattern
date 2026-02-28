@@ -17,6 +17,7 @@ import (
 	"transaction-service/internal/core/handler"
 	"transaction-service/internal/core/usecase"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -66,13 +67,14 @@ func main() {
 
 	mux := http.NewServeMux()
 	txHandler.RegisterRoutes(mux)
+	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", cfg.Server.Port),
-		Handler: mux,
+		Handler: handler.MetricsMiddleware(mux),
 	}
 
 	go func() {
