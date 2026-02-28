@@ -29,8 +29,6 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-      id-token: write
-      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,7 +39,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          direct_prompt: |
+          prompt: |
             You are reviewing a pull request in a Go monorepo (outbox-pattern).
             The project uses clean/hexagonal architecture with two services: users-service and transaction-service.
 
