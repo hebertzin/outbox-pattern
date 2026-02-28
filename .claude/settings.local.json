@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go get github.com/google/uuid)",
+      "Bash(go mod tidy)",
+      "Bash(go build ./...)",
+      "Bash(go test ./... -v)",
+      "Bash(git rm -r transaction-service/entity transaction-service/migrations transaction-service/main.go transaction-service/go.mod)",
+      "Bash(git mv cmd transaction-service/cmd)",
+      "Bash(git mv config transaction-service/config)",
+      "Bash(git mv internal transaction-service/internal)",
+      "Bash(git mv infra transaction-service/infra)",
+      "Bash(git mv migrations transaction-service/migrations)",
+      "Bash(git mv build transaction-service/build)",
+      "Bash(git mv tools transaction-service/tools)",
+      "Bash(git mv go.mod transaction-service/go.mod)",
+      "Bash(git mv go.sum transaction-service/go.sum)",
+      "Bash(git mv config/config.go transaction-service/config/config.go)",
+      "Bash(go test ./...)",
+      "Bash(git add -A)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
