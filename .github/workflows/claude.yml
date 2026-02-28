@@ -4,17 +4,17 @@ on:
   # Auto-review when a PR is opened or updated
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main, staging]
+    branches: []
 
   # On-demand via @claude mention
   issue_comment:
-    types: [created]
+    types: []
   pull_request_review_comment:
-    types: [created]
+    types: []
   issues:
-    types: [opened, assigned]
+    types: []
   pull_request_review:
-    types: [submitted]
+    types: []
 
 jobs:
   claude:
