@@ -1,138 +1,262 @@
-# Golang Outbox Pattern - Distributed Consistency Study
+# Golang Outbox Pattern — Distributed Consistency Study
 
-> Production-inspired implementation of the **Outbox Pattern** in Golang
-> to guarantee reliable event publishing in a microservices
-> architecture.
+A production-grade implementation of the **Outbox Pattern** in Go, designed to guarantee **data consistency, reliability, and scalability** in microservices architectures.
 
-------------------------------------------------------------------------
+This project demonstrates how modern distributed systems guarantee reliable event publishing without compromising database consistency.
+
+---
 
 ## Overview
 
-This project demonstrates a practical implementation of the **Outbox
-Pattern** to solve a classic distributed systems problem:
+The system contains two independent services:
 
-> How do we guarantee that database state changes and event publishing
-> happen reliably and consistently?
-
-The system currently contains two independent services:
-
--   **User Service**
--   **Transaction Service**
+- **User Service** — manages user creation with outbox event emission
+- **Transaction Service** — manages financial transactions with outbox event emission
 
 Each service:
+- Owns its own database
+- Implements an `outbox` table
+- Publishes events asynchronously via a background worker
 
--   Owns its database
--   Implements an `outbox` table
--   Publishes events asynchronously via a worker
+The objective is to simulate a production-grade, event-driven architecture with strong consistency guarantees.
 
-The objective is to simulate a production-grade, event-driven
-architecture with strong consistency guarantees.
+---
 
-------------------------------------------------------------------------
-
-##  Problem Being Solved
+## The Dual-Write Problem
 
 In distributed systems, this failure scenario is common:
 
-1.  Service writes to the database 
-2.  Service tries to publish an event 
-3.  System becomes inconsistent
+```
+Service writes to the database  ✓
+Service tries to publish event  ✗  ← broker unavailable
+System becomes inconsistent     ✗
+```
 
-This is known as the **dual-write problem**.
+The **Outbox Pattern** solves this.
 
-------------------------------------------------------------------------
+---
 
 ## The Outbox Solution
 
-Instead of publishing events directly:
+Instead of publishing events directly to a broker:
 
-1.  The service performs a business operation.
-2.  The domain change and event record are stored **in the same database
-    transaction**.
-3.  A background worker polls the `outbox` table.
-4.  Events are published to a message broker.
-5.  After successful publishing, the event is marked as `PROCESSED`.
+1. Business operation is performed
+2. Domain change **and** event record are stored in the **same database transaction**
+3. A background worker polls the `outbox` table
+4. Events are published to a message broker
+5. After successful publishing, the event is marked as `PROCESSED`
 
-This guarantees:
+```
+BEGIN TRANSACTION
+  INSERT INTO <domain_table> (...)
+  INSERT INTO outbox (id, type, payload, status)
+COMMIT
 
--   Atomic persistence
--   No lost events
--   Eventual consistency
--   Retry capability
+-- Background worker:
+SELECT * FROM outbox WHERE status = 'PENDING'
+Publish event to broker
+UPDATE outbox SET status = 'PROCESSED'
+```
 
-------------------------------------------------------------------------
+**Guarantees:**
+- Atomic persistence (no partial writes)
+- No lost events
+- Eventual consistency
+- At-least-once delivery
+- Retry capability
 
-##  Tech Stack
+---
 
--   Golang
--   PostgreSQL
--   Worker Pattern
--   Kafka / RabbitMQ (planned)
--   Clean Architecture principles
+## Architecture
 
-------------------------------------------------------------------------
+```
+Client
+  │
+  ▼
+HTTP API (Presentation Layer)
+  │
+  ▼
+Use Case Layer (Application Layer)
+  │
+  ▼
+Repository Layer (Infrastructure)
+  │
+  ├── domain table (users / transactions)
+  └── outbox table
+           │
+           ▼
+     Outbox Worker (background poller)
+           │
+           ▼
+     Message Broker (Kafka / RabbitMQ / SQS)
+```
 
-## Consistency Guarantees
+Each service follows **Clean Architecture**:
 
-This implementation provides:
+```
+domain/ports/         ← interfaces (dependency inversion)
+application/usecase/  ← business logic (depends only on ports)
+infra/                ← concrete implementations (DB, messaging, worker)
+presentation/         ← HTTP handlers
+```
 
--   Atomic write of domain + event
--   Retry-safe event publishing
--   At-least-once delivery
--   Idempotency-ready design
--   Failure recovery via polling worker
+---
 
-------------------------------------------------------------------------
+## Tech Stack
 
-## Core Concepts Practiced
+- Go (Golang)
+- PostgreSQL
+- Clean Architecture
+- Outbox Pattern
+- Graceful Shutdown
+- Kafka / RabbitMQ (pluggable via `EventPublisher` interface)
 
--   Outbox Pattern
--   Event-Driven Architecture
--   Eventual Consistency
--   Distributed System Failure Handling
--   Idempotency
--   Worker-based asynchronous processing
--   Transaction management in Go
+---
 
-------------------------------------------------------------------------
+## User Service API
 
-## Failure Scenarios Covered
+### Create User
 
--   Broker unavailable
--   Worker crash
--   Partial processing
--   Duplicate event handling
--   Transaction rollback simulation
+```
+POST /users
+```
 
-------------------------------------------------------------------------
+Request:
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
 
-##  Why This Project Matters
+Response:
+```json
+{
+  "code": 201,
+  "message": "user created successfully",
+  "data": { "id": "uuid" }
+}
+```
 
-This pattern is widely used in high-scale systems to guarantee
-consistency between state changes and asynchronous messaging.
+---
 
-Understanding and implementing this correctly is critical for backend
-engineers working in distributed systems.
+## Transaction Service API
 
-------------------------------------------------------------------------
+### Create Transaction
 
-##  How to Run
+```
+POST /api/v1/transactions
+```
 
-``` bash
+Request:
+```json
+{
+  "amount": 100,
+  "description": "transfer",
+  "fromUserId": "user-1",
+  "toUserId": "user-2"
+}
+```
+
+Response:
+```json
+{
+  "transactionId": "uuid",
+  "status": "PENDING"
+}
+```
+
+### Get Transaction Status
+
+```
+GET /api/v1/transactions/{id}
+```
+
+### Get Balance
+
+```
+GET /api/v1/balance/{userId}
+```
+
+---
+
+## Environment Variables
+
+### User Service
+```
+SERVER_PORT=8080
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=users_db
+OUTBOX_WORKER_INTERVAL=5s
+```
+
+### Transaction Service
+```
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=transaction_db
+```
+
+---
+
+## How to Run
+
+```bash
 docker-compose up --build
 ```
 
 Then:
+1. Create a user / transaction
+2. Observe event written to outbox table
+3. Watch worker publish event
+4. Verify status transitions: `PENDING` → `PROCESSED`
 
-1.  Create a user
-2.  Observe event being written to outbox
-3.  Watch worker publish event
-4.  Verify status transition
+---
 
-------------------------------------------------------------------------
+## Consistency Guarantees
 
-## Author
+- Atomic write of domain data + outbox event
+- Retry-safe event publishing
+- At-least-once delivery
+- Idempotency-ready design
+- Failure recovery via polling worker
 
-Built as a distributed systems study project to deepen backend
-architecture knowledge and simulate production-grade reliability
-patterns.
+## Failure Scenarios Covered
+
+- Broker unavailable
+- Worker crash mid-processing
+- Partial batch processing
+- Database rollback simulation
+
+---
+
+## Core Concepts Practiced
+
+- Outbox Pattern
+- Event-Driven Architecture
+- Eventual Consistency
+- Distributed System Failure Handling
+- Clean Architecture / Hexagonal Architecture
+- Dependency Inversion Principle
+- Worker-based asynchronous processing
+- Transaction management in Go
+
+---
+
+## Future Improvements
+
+- Kafka / RabbitMQ integration
+- Idempotency keys
+- Observability (metrics, tracing, structured logging)
+- Retry and dead-letter queue support
+
+---
+
+## Purpose
+
+Built as a distributed systems study project to deepen backend architecture knowledge and simulate production-grade reliability patterns used in fintech and high-scale systems.
