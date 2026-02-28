@@ -11,7 +11,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// RabbitMQPublisher implements ports.EventPublisher using RabbitMQ.
 type RabbitMQPublisher struct {
 	channel    *amqp.Channel
 	exchange   string
