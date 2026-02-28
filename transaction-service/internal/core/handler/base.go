@@ -5,26 +5,30 @@ import (
 	"net/http"
 )
 
-type HttpResponse struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
+type (
+	// Response is the standard success envelope.
+	Response struct {
+		Code    int         `json:"code"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data,omitempty"`
+	}
 
-type ErrorResponse struct {
-	Title    string `json:"title"`
-	Status   int    `json:"status"`
-	Detail   string `json:"detail,omitempty"`
-	Instance string `json:"instance,omitempty"`
-}
+	// ErrResponse follows a Problem Details-like shape for errors.
+	ErrResponse struct {
+		Title    string `json:"title"`
+		Status   int    `json:"status"`
+		Detail   string `json:"detail,omitempty"`
+		Instance string `json:"instance,omitempty"`
+	}
 
-type BaseHandler struct{}
+	// Base embeds shared response helpers into every handler.
+	Base struct{}
+)
 
-func (b *BaseHandler) RespondWithError(w http.ResponseWriter, r *http.Request, status int, title, detail string) {
+func (b *Base) RespondWithError(w http.ResponseWriter, r *http.Request, status int, title, detail string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
-	json.NewEncoder(w).Encode(ErrorResponse{
+	_ = json.NewEncoder(w).Encode(ErrResponse{
 		Title:    title,
 		Status:   status,
 		Detail:   detail,
@@ -32,11 +36,10 @@ func (b *BaseHandler) RespondWithError(w http.ResponseWriter, r *http.Request, s
 	})
 }
 
-func (b *BaseHandler) RespondWithSuccess(w http.ResponseWriter, code int, message string, data interface{}) {
+func (b *Base) RespondWithSuccess(w http.ResponseWriter, code int, message string, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-
-	json.NewEncoder(w).Encode(HttpResponse{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code:    code,
 		Message: message,
 		Data:    data,

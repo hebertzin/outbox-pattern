@@ -43,7 +43,7 @@ func TestGetTransactionStatusUseCase_NotFound(t *testing.T) {
 
 	_, err := uc.Execute(context.Background(), "tx-unknown")
 
-	assertException(t, err, http.StatusNotFound)
+	_ = assertException(t, err, http.StatusNotFound)
 }
 
 func TestGetTransactionStatusUseCase_RepositoryError(t *testing.T) {
@@ -56,5 +56,5 @@ func TestGetTransactionStatusUseCase_RepositoryError(t *testing.T) {
 
 	_, err := uc.Execute(context.Background(), "tx-1")
 
-	assertException(t, err, http.StatusInternalServerError)
+	_ = assertException(t, err, http.StatusInternalServerError)
 }

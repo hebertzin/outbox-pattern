@@ -6,24 +6,26 @@ import (
 	apperrors "transaction-service/internal/core/errors"
 )
 
-type GetBalanceInput struct {
-	UserID string
-}
+type (
+	BalanceInput struct {
+		UserID string
+	}
 
-type GetBalanceOutput struct {
-	UserID  string
-	Balance int64
-}
+	BalanceOutput struct {
+		UserID  string
+		Balance int64
+	}
 
-type GetBalanceUseCase struct {
-	repo ports.TransactionRepository
-}
+	GetBalanceUseCase struct {
+		repo ports.TransactionRepository
+	}
+)
 
 func NewGetBalanceUseCase(repo ports.TransactionRepository) *GetBalanceUseCase {
 	return &GetBalanceUseCase{repo: repo}
 }
 
-func (uc *GetBalanceUseCase) Execute(ctx context.Context, input GetBalanceInput) (*GetBalanceOutput, error) {
+func (uc *GetBalanceUseCase) Execute(ctx context.Context, input BalanceInput) (*BalanceOutput, error) {
 	if input.UserID == "" {
 		return nil, apperrors.BadRequest(apperrors.WithMessage("user_id is required"))
 	}
@@ -33,7 +35,7 @@ func (uc *GetBalanceUseCase) Execute(ctx context.Context, input GetBalanceInput)
 		return nil, apperrors.Unexpected(apperrors.WithError(err))
 	}
 
-	return &GetBalanceOutput{
+	return &BalanceOutput{
 		UserID:  input.UserID,
 		Balance: balance,
 	}, nil

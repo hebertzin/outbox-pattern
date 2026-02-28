@@ -20,7 +20,7 @@ func (r *PostgresTransactionRepository) Create(ctx context.Context, tx *entity.T
 	if err != nil {
 		return err
 	}
-	defer dbTx.Rollback()
+	defer func() { _ = dbTx.Rollback() }()
 
 	const insertTx = `
 		INSERT INTO transactions (id, amount, description, from_user_id, to_user_id, transaction_status, created_at)

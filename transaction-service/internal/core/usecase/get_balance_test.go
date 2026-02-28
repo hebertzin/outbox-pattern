@@ -16,7 +16,7 @@ func TestGetBalanceUseCase_Success(t *testing.T) {
 	}
 	uc := usecase.NewGetBalanceUseCase(repo)
 
-	out, err := uc.Execute(context.Background(), usecase.GetBalanceInput{UserID: "user-1"})
+	out, err := uc.Execute(context.Background(), usecase.BalanceInput{UserID: "user-1"})
 
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
@@ -33,9 +33,9 @@ func TestGetBalanceUseCase_EmptyUserID(t *testing.T) {
 	repo := &mockTransactionRepository{}
 	uc := usecase.NewGetBalanceUseCase(repo)
 
-	_, err := uc.Execute(context.Background(), usecase.GetBalanceInput{UserID: ""})
+	_, err := uc.Execute(context.Background(), usecase.BalanceInput{UserID: ""})
 
-	assertException(t, err, http.StatusBadRequest)
+	_ = assertException(t, err, http.StatusBadRequest)
 }
 
 func TestGetBalanceUseCase_RepositoryError(t *testing.T) {
@@ -46,7 +46,7 @@ func TestGetBalanceUseCase_RepositoryError(t *testing.T) {
 	}
 	uc := usecase.NewGetBalanceUseCase(repo)
 
-	_, err := uc.Execute(context.Background(), usecase.GetBalanceInput{UserID: "user-1"})
+	_, err := uc.Execute(context.Background(), usecase.BalanceInput{UserID: "user-1"})
 
-	assertException(t, err, http.StatusInternalServerError)
+	_ = assertException(t, err, http.StatusInternalServerError)
 }
