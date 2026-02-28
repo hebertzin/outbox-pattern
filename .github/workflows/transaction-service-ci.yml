@@ -1,0 +1,69 @@
+name: Transaction Service CI
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - "transaction-service/**"
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - "transaction-service/**"
+
+defaults:
+  run:
+    working-directory: transaction-service
+
+jobs:
+  lint:
+    name: Code Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: transaction-service/go.mod
+          cache-dependency-path: transaction-service/go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: transaction-service
+          args: --timeout=5m
+
+  test:
+    name: Tests & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: transaction-service/go.mod
+          cache-dependency-path: transaction-service/go.sum
+
+      - name: Run tests with coverage
+        run: go test ./internal/core/usecase/... -coverprofile=coverage.out -covermode=atomic -v
+
+      - name: Check coverage threshold (90%)
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
+          echo "Total coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "::error::Coverage ${COVERAGE}% is below the required 90% threshold"
+            exit 1
+          fi
+          echo "Coverage ${COVERAGE}% meets the required threshold"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: transaction-service/coverage.out
+          retention-days: 7
