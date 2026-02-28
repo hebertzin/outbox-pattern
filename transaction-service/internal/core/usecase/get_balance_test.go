@@ -11,7 +11,7 @@ import (
 
 func TestGetBalanceUseCase_Success(t *testing.T) {
 	repo := &mockTransactionRepository{
-		getBalanceFn: func(ctx context.Context, userID string) (int64, error) {
+		getBalanceFn: func(_ context.Context, _ string) (int64, error) {
 			return 1500, nil
 		},
 	}
@@ -41,7 +41,7 @@ func TestGetBalanceUseCase_EmptyUserID(t *testing.T) {
 
 func TestGetBalanceUseCase_RepositoryError(t *testing.T) {
 	repo := &mockTransactionRepository{
-		getBalanceFn: func(ctx context.Context, userID string) (int64, error) {
+		getBalanceFn: func(_ context.Context, _ string) (int64, error) {
 			return 0, errors.New("db error")
 		},
 	}

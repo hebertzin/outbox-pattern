@@ -90,7 +90,7 @@ func TestCreateTransactionUseCase_SavesOutboxEvent(t *testing.T) {
 	var capturedOutbox *entity.Outbox
 
 	repo := &mockTransactionRepository{
-		createFn: func(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error {
+		createFn: func(_ context.Context, _ *entity.Transaction, outbox *entity.Outbox) error {
 			capturedOutbox = outbox
 			return nil
 		},
@@ -154,7 +154,7 @@ func TestCreateTransactionUseCase_InvalidAmount(t *testing.T) {
 
 func TestCreateTransactionUseCase_RepositoryError(t *testing.T) {
 	repo := &mockTransactionRepository{
-		createFn: func(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error {
+		createFn: func(_ context.Context, _ *entity.Transaction, _ *entity.Outbox) error {
 			return errors.New("db error")
 		},
 	}
@@ -175,7 +175,7 @@ func TestCreateTransactionUseCase_IdempotencyKeyReturnsExisting(t *testing.T) {
 		Status: entity.StatusPending,
 	}
 	repo := &mockTransactionRepository{
-		findByIdempotencyKeyFn: func(ctx context.Context, key string) (*entity.Transaction, error) {
+		findByIdempotencyKeyFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return existing, nil
 		},
 	}
@@ -202,7 +202,7 @@ func TestCreateTransactionUseCase_IdempotencyKeyReturnsExisting(t *testing.T) {
 func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T) {
 	called := false
 	repo := &mockTransactionRepository{
-		createFn: func(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error {
+		createFn: func(_ context.Context, _ *entity.Transaction, _ *entity.Outbox) error {
 			called = true
 			return nil
 		},

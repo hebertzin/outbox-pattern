@@ -12,7 +12,7 @@ import (
 
 func TestGetTransactionStatusUseCase_Success(t *testing.T) {
 	repo := &mockTransactionRepository{
-		findByIDFn: func(ctx context.Context, id string) (*entity.Transaction, error) {
+		findByIDFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return &entity.Transaction{
 				ID:     "tx-1",
 				Status: entity.StatusPending,
@@ -36,7 +36,7 @@ func TestGetTransactionStatusUseCase_Success(t *testing.T) {
 
 func TestGetTransactionStatusUseCase_NotFound(t *testing.T) {
 	repo := &mockTransactionRepository{
-		findByIDFn: func(ctx context.Context, id string) (*entity.Transaction, error) {
+		findByIDFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return nil, nil
 		},
 	}
@@ -49,7 +49,7 @@ func TestGetTransactionStatusUseCase_NotFound(t *testing.T) {
 
 func TestGetTransactionStatusUseCase_RepositoryError(t *testing.T) {
 	repo := &mockTransactionRepository{
-		findByIDFn: func(ctx context.Context, id string) (*entity.Transaction, error) {
+		findByIDFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
 			return nil, errors.New("db error")
 		},
 	}
