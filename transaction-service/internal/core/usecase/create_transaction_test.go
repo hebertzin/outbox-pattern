@@ -12,9 +12,10 @@ import (
 )
 
 type mockTransactionRepository struct {
-	createFn     func(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error
-	findByIDFn   func(ctx context.Context, id string) (*entity.Transaction, error)
-	getBalanceFn func(ctx context.Context, userID string) (int64, error)
+	createFn               func(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error
+	findByIDFn             func(ctx context.Context, id string) (*entity.Transaction, error)
+	findByIdempotencyKeyFn func(ctx context.Context, key string) (*entity.Transaction, error)
+	getBalanceFn           func(ctx context.Context, userID string) (int64, error)
 }
 
 func (m *mockTransactionRepository) Create(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error {
@@ -27,6 +28,13 @@ func (m *mockTransactionRepository) Create(ctx context.Context, tx *entity.Trans
 func (m *mockTransactionRepository) FindByID(ctx context.Context, id string) (*entity.Transaction, error) {
 	if m.findByIDFn != nil {
 		return m.findByIDFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *mockTransactionRepository) FindByIdempotencyKey(ctx context.Context, key string) (*entity.Transaction, error) {
+	if m.findByIdempotencyKeyFn != nil {
+		return m.findByIdempotencyKeyFn(ctx, key)
 	}
 	return nil, nil
 }
@@ -153,6 +161,36 @@ func TestCreateTransactionUseCase_RepositoryError(t *testing.T) {
 	})
 
 	_ = assertException(t, err, http.StatusInternalServerError)
+}
+
+func TestCreateTransactionUseCase_IdempotencyKeyReturnsExisting(t *testing.T) {
+	existing := &entity.Transaction{
+		ID:     "tx-existing",
+		Status: entity.StatusPending,
+	}
+	repo := &mockTransactionRepository{
+		findByIdempotencyKeyFn: func(ctx context.Context, key string) (*entity.Transaction, error) {
+			return existing, nil
+		},
+	}
+	uc := usecase.NewCreateTransactionUseCase(repo)
+
+	out, err := uc.Execute(context.Background(), usecase.CreateInput{
+		FromUserID:     "user-1",
+		ToUserID:       "user-2",
+		Amount:         100,
+		IdempotencyKey: "key-abc",
+	})
+
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if out.ID != "tx-existing" {
+		t.Fatalf("expected ID 'tx-existing', got '%s'", out.ID)
+	}
+	if !out.Idempotent {
+		t.Fatal("expected Idempotent to be true")
+	}
 }
 
 func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T) {

@@ -3,11 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/lib/pq"
 )
-
-const maxOpenConns = 25
 
 func Connect(host string, port int, user, password, dbname string) (*sql.DB, error) {
 	dsn := fmt.Sprintf(
@@ -20,7 +19,10 @@ func Connect(host string, port int, user, password, dbname string) (*sql.DB, err
 		return nil, fmt.Errorf("open db: %w", err)
 	}
 
-	database.SetMaxOpenConns(maxOpenConns)
+	database.SetMaxOpenConns(25)
+	database.SetMaxIdleConns(5)
+	database.SetConnMaxLifetime(5 * time.Minute)
+	database.SetConnMaxIdleTime(1 * time.Minute)
 
 	if err := database.Ping(); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)

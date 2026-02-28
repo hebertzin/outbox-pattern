@@ -7,7 +7,6 @@ import (
 
 	"transaction-service/internal/core/domain/entity"
 
-	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -36,7 +35,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, event *entity.Outbox) e
 			ContentType:  "application/json",
 			Body:         []byte(event.Payload),
 			DeliveryMode: amqp.Persistent,
-			MessageId:    uuid.NewString(),
+			MessageId:    event.ID,
 			Timestamp:    time.Now().UTC(),
 			Headers: amqp.Table{
 				"event_type":   event.Type,

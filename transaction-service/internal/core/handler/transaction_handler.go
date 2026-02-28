@@ -59,16 +59,24 @@ func (h *Handler) handleCreate(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	out, err := h.create.Execute(r.Context(), usecase.CreateInput{
-		FromUserID:  req.FromUserID,
-		ToUserID:    req.ToUserID,
-		Amount:      req.Amount,
-		Description: req.Description,
+		FromUserID:     req.FromUserID,
+		ToUserID:       req.ToUserID,
+		Amount:         req.Amount,
+		Description:    req.Description,
+		IdempotencyKey: r.Header.Get("Idempotency-Key"),
 	})
 	if err != nil {
 		return err
 	}
 
-	h.RespondWithSuccess(w, http.StatusCreated, "transaction created", map[string]string{
+	statusCode := http.StatusCreated
+	message := "transaction created"
+	if out.Idempotent {
+		statusCode = http.StatusOK
+		message = "transaction already exists"
+	}
+
+	h.RespondWithSuccess(w, statusCode, message, map[string]string{
 		"id":     out.ID,
 		"status": out.Status,
 	})

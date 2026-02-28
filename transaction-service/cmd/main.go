@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"transaction-service/config"
 	_ "transaction-service/docs"
@@ -73,8 +74,11 @@ func main() {
 	))
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%s", cfg.Server.Port),
-		Handler: handler.MetricsMiddleware(mux),
+		Addr:         fmt.Sprintf(":%s", cfg.Server.Port),
+		Handler:      handler.MetricsMiddleware(mux),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	go func() {
@@ -88,7 +92,9 @@ func main() {
 	<-ctx.Done()
 	logger.Info("shutting down gracefully")
 
-	if err := server.Shutdown(context.Background()); err != nil {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("server shutdown error", slog.String("error", err.Error()))
 	}
 }

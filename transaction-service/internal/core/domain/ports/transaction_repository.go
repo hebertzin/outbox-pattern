@@ -9,5 +9,6 @@ import (
 type TransactionRepository interface {
 	Create(ctx context.Context, tx *entity.Transaction, outbox *entity.Outbox) error
 	FindByID(ctx context.Context, id string) (*entity.Transaction, error)
+	FindByIdempotencyKey(ctx context.Context, key string) (*entity.Transaction, error)
 	GetBalance(ctx context.Context, userID string) (int64, error)
 }

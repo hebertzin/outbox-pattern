@@ -24,11 +24,11 @@ func (r *PostgresTransactionRepository) Create(ctx context.Context, tx *entity.T
 	defer func() { _ = dbTx.Rollback() }()
 
 	const insertTx = `
-		INSERT INTO transactions (id, amount, description, from_user_id, to_user_id, transaction_status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO transactions (id, amount, description, from_user_id, to_user_id, transaction_status, created_at, idempotency_key)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	if _, err := dbTx.ExecContext(ctx, insertTx,
-		tx.ID, tx.Amount, tx.Description, tx.FromUserID, tx.ToUserID, string(tx.Status), tx.CreatedAt,
+		tx.ID, tx.Amount, tx.Description, tx.FromUserID, tx.ToUserID, string(tx.Status), tx.CreatedAt, tx.IdempotencyKey,
 	); err != nil {
 		return fmt.Errorf("insert transaction: %w", err)
 	}
@@ -62,6 +62,26 @@ func (r *PostgresTransactionRepository) FindByID(ctx context.Context, id string)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find transaction: %w", err)
+	}
+	return &tx, nil
+}
+
+func (r *PostgresTransactionRepository) FindByIdempotencyKey(ctx context.Context, key string) (*entity.Transaction, error) {
+	const query = `
+		SELECT id, amount, description, from_user_id, to_user_id, transaction_status, created_at
+		FROM transactions
+		WHERE idempotency_key = $1
+	`
+	var tx entity.Transaction
+	err := r.db.QueryRowContext(ctx, query, key).Scan(
+		&tx.ID, &tx.Amount, &tx.Description,
+		&tx.FromUserID, &tx.ToUserID, &tx.Status, &tx.CreatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find transaction by idempotency key: %w", err)
 	}
 	return &tx, nil
 }
