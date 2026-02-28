@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"transaction-service/internal/core/domain/ports"
+	apperrors "transaction-service/internal/core/errors"
 )
 
 type GetTransactionStatusOutput struct {
@@ -22,7 +22,10 @@ func NewGetTransactionStatusUseCase(repo ports.TransactionRepository) *GetTransa
 func (uc *GetTransactionStatusUseCase) Execute(ctx context.Context, id string) (*GetTransactionStatusOutput, error) {
 	tx, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("find transaction: %w", err)
+		return nil, apperrors.Unexpected(apperrors.WithError(err))
+	}
+	if tx == nil {
+		return nil, apperrors.NotFound(apperrors.WithMessage("transaction not found"))
 	}
 
 	return &GetTransactionStatusOutput{

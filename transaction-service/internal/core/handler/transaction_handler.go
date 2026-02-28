@@ -2,9 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
-	"transaction-service/internal/core/domain/entity"
+	apperrors "transaction-service/internal/core/errors"
 	"transaction-service/internal/core/usecase"
 )
 
@@ -54,13 +53,6 @@ func (h *TransactionHandler) handleCreate(w http.ResponseWriter, r *http.Request
 		Description: req.Description,
 	})
 	if err != nil {
-		if errors.Is(err, entity.ErrAmountMustBePositive) ||
-			errors.Is(err, entity.ErrSameUser) ||
-			errors.Is(err, entity.ErrFromUserIDRequired) ||
-			errors.Is(err, entity.ErrToUserIDRequired) {
-			h.RespondWithError(w, r, http.StatusBadRequest, "validation error", err.Error())
-			return nil
-		}
 		return err
 	}
 
@@ -105,8 +97,16 @@ func (h *TransactionHandler) handleGetBalance(w http.ResponseWriter, r *http.Req
 
 func (h *TransactionHandler) wrap(fn func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := fn(w, r); err != nil {
-			h.RespondWithError(w, r, http.StatusInternalServerError, "internal server error", err.Error())
+		err := fn(w, r)
+		if err == nil {
+			return
 		}
+
+		if exc, ok := err.(*apperrors.Exception); ok {
+			h.RespondWithError(w, r, exc.Code, exc.Message, exc.Err)
+			return
+		}
+
+		h.RespondWithError(w, r, http.StatusInternalServerError, "internal server error", err.Error())
 	}
 }
