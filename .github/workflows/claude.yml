@@ -41,6 +41,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
           prompt: |
             You are reviewing a pull request in a Go monorepo (outbox-pattern).
             The project uses clean/hexagonal architecture with two services: users-service and transaction-service.
