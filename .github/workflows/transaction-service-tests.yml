@@ -30,8 +30,9 @@ jobs:
           go-version-file: transaction-service/go.mod
           cache-dependency-path: transaction-service/go.sum
 
-      - name: Run tests with coverage
-        run: go test ./internal/core/usecase/... -coverprofile=coverage.out -covermode=atomic -v
+      # -race enables the data-race detector (requires CGO, available on ubuntu-latest)
+      - name: Run tests with race detector
+        run: go test -race ./internal/core/usecase/... -coverprofile=coverage.out -covermode=atomic -v
 
       - name: Check coverage threshold (90%)
         run: |
