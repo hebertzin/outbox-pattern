@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	pollInterval = 500 * time.Millisecond
-	batchSize    = 50
+	pollInterval   = 500 * time.Millisecond
+	batchSize      = 50
 	publishTimeout = 5 * time.Second
 )
 
