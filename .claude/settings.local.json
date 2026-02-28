@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go get github.com/google/uuid)",
+      "Bash(go mod tidy)",
+      "Bash(go build ./...)",
+      "Bash(go test ./... -v)"
+    ]
+  }
+}

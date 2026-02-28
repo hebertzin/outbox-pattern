@@ -2,27 +2,24 @@ package presentation
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"users-services/application/usecase"
 	"users-services/domain/entity"
-	"users-services/usecase"
 )
 
-type (
-	UserHandler struct {
-		UserService *usecase.UserUseCase
-		BaseHandler
-	}
+type UserHandler struct {
+	createUser *usecase.CreateUserUseCase
+	BaseHandler
+}
 
-	createUserRequest struct {
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required"`
-	}
-)
+type createUserRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-func NewUserHandler(userService *usecase.UserUseCase) *UserHandler {
-	return &UserHandler{
-		UserService: userService,
-	}
+func NewUserHandler(createUser *usecase.CreateUserUseCase) *UserHandler {
+	return &UserHandler{createUser: createUser}
 }
 
 // Create godoc
@@ -33,26 +30,27 @@ func NewUserHandler(userService *usecase.UserUseCase) *UserHandler {
 // @Produce      json
 // @Param        request body createUserRequest true "User data"
 // @Success      201 {object} HttpResponse "User created successfully"
-// @Failure      400 {object} ErrorResponse "Invalid request body"
-// @Failure      409 {object} ErrorResponse "User already exists"
+// @Failure      400 {object} ErrorResponse "Invalid request body or validation error"
 // @Router       /users [post]
-func (handler *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		handler.RespondWithError(w, r, http.StatusBadRequest, "invalid request body", err.Error())
+		h.RespondWithError(w, r, http.StatusBadRequest, "invalid request body", err.Error())
 		return
 	}
 
-	u := entity.User{
+	out, err := h.createUser.Execute(r.Context(), usecase.CreateUserInput{
 		Email:    req.Email,
 		Password: req.Password,
-	}
-
-	_, err := handler.UserService.Execute(r.Context(), &u)
+	})
 	if err != nil {
-		handler.RespondWithError(w, r, err.Code, err.Error(), err.Message)
+		if errors.Is(err, entity.ErrEmailRequired) || errors.Is(err, entity.ErrEmailInvalid) || errors.Is(err, entity.ErrPasswordTooShort) {
+			h.RespondWithError(w, r, http.StatusBadRequest, "validation error", err.Error())
+			return
+		}
+		h.RespondWithError(w, r, http.StatusInternalServerError, "internal server error", err.Error())
 		return
 	}
 
-	handler.RespondWithSuccess(w, http.StatusCreated, "user created successfully with outbox", nil)
+	h.RespondWithSuccess(w, http.StatusCreated, "user created successfully", map[string]string{"id": out.ID})
 }

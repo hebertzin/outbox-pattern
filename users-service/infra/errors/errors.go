@@ -52,7 +52,7 @@ func BadRequest(opts ...UserFriendlyExceptionOption) *Exception {
 	return UserFriendlyException(defaultOpts...)
 }
 
-func Confilct(opts ...UserFriendlyExceptionOption) *Exception {
+func Conflict(opts ...UserFriendlyExceptionOption) *Exception {
 	defaultOpts := []UserFriendlyExceptionOption{
 		WithCode(409),
 		WithMessage("conflict"),
@@ -87,7 +87,7 @@ func Unexpected(opts ...UserFriendlyExceptionOption) *Exception {
 
 func UserFriendlyException(opts ...UserFriendlyExceptionOption) *Exception {
 	const (
-		defaultMessage = "This is a friendly error, don't panic! Everthing is under control"
+		defaultMessage = "This is a friendly error, don't panic! Everything is under control"
 		defaultCode    = 500
 	)
 

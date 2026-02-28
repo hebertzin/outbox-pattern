@@ -3,61 +3,39 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"users-services/domain/entity"
 )
 
-type UserRepository interface {
-	Insert(ctx context.Context, user *entity.User) (string, error)
+type PostgresUserRepository struct {
+	db *sql.DB
 }
 
-type DbUserRepository struct {
-	Db *sql.DB
+func NewUserRepository(db *sql.DB) *PostgresUserRepository {
+	return &PostgresUserRepository{db: db}
 }
 
-func NewUserRepository(db *sql.DB) *DbUserRepository {
-	return &DbUserRepository{Db: db}
-}
-
-func (r *DbUserRepository) Insert(ctx context.Context, user *entity.User) (string, error) {
-	tx, err := r.Db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+func (r *PostgresUserRepository) Insert(ctx context.Context, user *entity.User, outbox *entity.Outbox) error {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
-		return "", err
+		return err
 	}
-
-	defer func() {
-		_ = tx.Rollback()
-	}()
+	defer tx.Rollback()
 
 	const insertUser = `
 		INSERT INTO users (id, email, password, created_at)
-		VALUES ($1, $2, $3, NOW())
+		VALUES ($1, $2, $3, $4)
 	`
-	if _, err := tx.ExecContext(ctx, insertUser, user.ID, user.Email, user.Password); err != nil {
-		return "", err
-	}
-
-	payloadBytes, err := json.Marshal(map[string]any{
-		"userId": user.ID,
-		"email":  user.Email,
-	})
-	if err != nil {
-		return "", fmt.Errorf("marshal outbox payload: %w", err)
+	if _, err := tx.ExecContext(ctx, insertUser, user.ID, user.Email, user.Password, user.CreatedAt); err != nil {
+		return err
 	}
 
 	const insertOutbox = `
 		INSERT INTO outbox (id, type, payload, status, created_at)
-		VALUES ($1, $2, $3, $4, NOW())
+		VALUES ($1, $2, $3, $4, $5)
 	`
-	outboxID := user.ID
-	if _, err := tx.ExecContext(ctx, insertOutbox, outboxID, "UserCreated", string(payloadBytes), "PENDING"); err != nil {
-		return "", err
+	if _, err := tx.ExecContext(ctx, insertOutbox, outbox.ID, outbox.Type, outbox.Payload, string(outbox.Status), outbox.CreatedAt); err != nil {
+		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return "", err
-	}
-
-	return user.ID, nil
+	return tx.Commit()
 }
