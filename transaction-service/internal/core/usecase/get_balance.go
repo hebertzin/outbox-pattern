@@ -2,8 +2,8 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"transaction-service/internal/core/domain/ports"
+	apperrors "transaction-service/internal/core/errors"
 )
 
 type GetBalanceInput struct {
@@ -25,12 +25,12 @@ func NewGetBalanceUseCase(repo ports.TransactionRepository) *GetBalanceUseCase {
 
 func (uc *GetBalanceUseCase) Execute(ctx context.Context, input GetBalanceInput) (*GetBalanceOutput, error) {
 	if input.UserID == "" {
-		return nil, fmt.Errorf("user_id is required")
+		return nil, apperrors.BadRequest(apperrors.WithMessage("user_id is required"))
 	}
 
 	balance, err := uc.repo.GetBalance(ctx, input.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("get balance: %w", err)
+		return nil, apperrors.Unexpected(apperrors.WithError(err))
 	}
 
 	return &GetBalanceOutput{

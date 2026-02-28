@@ -3,8 +3,10 @@ package usecase_test
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"transaction-service/internal/core/domain/entity"
+	apperrors "transaction-service/internal/core/errors"
 	"transaction-service/internal/core/usecase"
 )
 
@@ -33,6 +35,18 @@ func (m *mockTransactionRepository) GetBalance(ctx context.Context, userID strin
 		return m.getBalanceFn(ctx, userID)
 	}
 	return 0, nil
+}
+
+func assertException(t *testing.T, err error, expectedCode int) *apperrors.Exception {
+	t.Helper()
+	exc, ok := err.(*apperrors.Exception)
+	if !ok {
+		t.Fatalf("expected *apperrors.Exception, got: %T — %v", err, err)
+	}
+	if exc.Code != expectedCode {
+		t.Fatalf("expected code %d, got %d", expectedCode, exc.Code)
+	}
+	return exc
 }
 
 func TestCreateTransactionUseCase_Success(t *testing.T) {
@@ -98,8 +112,9 @@ func TestCreateTransactionUseCase_SameUser(t *testing.T) {
 		Amount:     100,
 	})
 
-	if !errors.Is(err, entity.ErrSameUser) {
-		t.Fatalf("expected ErrSameUser, got: %v", err)
+	exc := assertException(t, err, http.StatusBadRequest)
+	if exc.Message != entity.ErrSameUser.Error() {
+		t.Fatalf("expected message %q, got %q", entity.ErrSameUser.Error(), exc.Message)
 	}
 }
 
@@ -115,8 +130,9 @@ func TestCreateTransactionUseCase_InvalidAmount(t *testing.T) {
 			Amount:     amount,
 		})
 
-		if !errors.Is(err, entity.ErrAmountMustBePositive) {
-			t.Fatalf("amount %d: expected ErrAmountMustBePositive, got: %v", amount, err)
+		exc := assertException(t, err, http.StatusBadRequest)
+		if exc.Message != entity.ErrAmountMustBePositive.Error() {
+			t.Fatalf("amount %d: expected message %q, got %q", amount, entity.ErrAmountMustBePositive.Error(), exc.Message)
 		}
 	}
 }
@@ -135,9 +151,7 @@ func TestCreateTransactionUseCase_RepositoryError(t *testing.T) {
 		Amount:     100,
 	})
 
-	if err == nil {
-		t.Fatal("expected error from repository, got nil")
-	}
+	assertException(t, err, http.StatusInternalServerError)
 }
 
 func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T) {

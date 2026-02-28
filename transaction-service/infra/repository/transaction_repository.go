@@ -57,7 +57,7 @@ func (r *PostgresTransactionRepository) FindByID(ctx context.Context, id string)
 		&tx.FromUserID, &tx.ToUserID, &tx.Status, &tx.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("transaction not found: %s", id)
+		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find transaction: %w", err)
