@@ -1,6 +1,12 @@
 name: Claude Code
 
 on:
+  # Auto-review when a PR is opened or updated
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, staging]
+
+  # On-demand via @claude mention
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -13,6 +19,7 @@ on:
 jobs:
   claude:
     if: |
+      github.event_name == 'pull_request' ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
@@ -22,8 +29,6 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-      id-token: write
-      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,3 +39,18 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are reviewing a pull request in a Go monorepo (outbox-pattern).
+            The project uses clean/hexagonal architecture with two services: users-service and transaction-service.
+
+            Please review the changes in this PR and provide feedback on:
+            - Correctness and potential bugs
+            - Go idiomatic code and best practices
+            - Architecture adherence (ports/adapters, dependency inversion)
+            - Error handling (typed *errors.Exception pattern)
+            - Test coverage for new logic
+            - Security concerns (SQL injection, input validation, etc.)
+            - Performance issues
+
+            Post your review as a PR review with inline comments where applicable.
+            Be concise and constructive. Only comment on changed files.
