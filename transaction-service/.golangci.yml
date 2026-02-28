@@ -1,0 +1,44 @@
+run:
+  timeout: 5m
+
+linters:
+  disable-all: true
+  enable:
+    # Correctness
+    - errcheck          # unchecked error return values
+    - govet             # suspicious constructs (printf verbs, struct tags, etc.)
+    - staticcheck       # SA*, S*, ST* checks from staticcheck
+    - gosimple          # simplification suggestions (subset of staticcheck)
+    - ineffassign       # detects assignments to variables never used afterward
+    - unused            # unused code: vars, consts, functions, types
+
+    # Code quality
+    - bodyclose         # HTTP response bodies must be closed
+    - misspell          # common English spelling mistakes in comments/strings
+    - revive            # drop-in replacement for golint with extra rules
+    - exportloopref     # loop variable capture in closures (Go < 1.22)
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true  # flag unchecked type assertions too
+
+  revive:
+    min-confidence: 0.8
+    rules:
+      - name: exported
+        severity: warning
+      - name: var-naming
+        severity: warning
+      - name: unused-parameter
+        severity: warning
+
+issues:
+  exclude-rules:
+    # Tests are allowed to have unchecked errors (t.Fatal handles them)
+    - path: _test\.go
+      linters:
+        - errcheck
+
+  # Show all issues, not just the first 3 per linter
+  max-issues-per-linter: 0
+  max-same-issues: 0
