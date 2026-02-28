@@ -1,0 +1,134 @@
+basePath: /
+definitions:
+  handler.CreateReq:
+    properties:
+      amount:
+        example: 1000
+        type: integer
+      description:
+        example: payment for services
+        type: string
+      from_user_id:
+        example: user-abc
+        type: string
+      to_user_id:
+        example: user-xyz
+        type: string
+    type: object
+  handler.ErrResponse:
+    properties:
+      detail:
+        type: string
+      instance:
+        type: string
+      status:
+        type: integer
+      title:
+        type: string
+    type: object
+  handler.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Transaction service using the outbox pattern for reliable event publishing.
+  title: Transaction Service API
+  version: "1.0"
+paths:
+  /api/v1/balance/{userId}:
+    get:
+      description: Returns the net balance for a given user ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+      summary: Get user balance
+      tags:
+      - balance
+  /api/v1/transactions:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new transaction and saves an outbox event atomically.
+      parameters:
+      - description: Transaction payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+      summary: Create transaction
+      tags:
+      - transactions
+  /api/v1/transactions/{id}:
+    get:
+      description: Returns the current status of a transaction by ID.
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrResponse'
+      summary: Get transaction status
+      tags:
+      - transactions
+schemes:
+- http
+swagger: "2.0"

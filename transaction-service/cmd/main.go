@@ -10,13 +10,22 @@ import (
 	"syscall"
 
 	"transaction-service/config"
+	_ "transaction-service/docs"
 	infradb "transaction-service/infra/db"
 	"transaction-service/infra/repository"
 	"transaction-service/internal/core/broker"
 	"transaction-service/internal/core/handler"
 	"transaction-service/internal/core/usecase"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title          Transaction Service API
+// @version        1.0
+// @description    Transaction service using the outbox pattern for reliable event publishing.
+// @host           localhost:8080
+// @BasePath       /
+// @schemes        http
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -53,10 +62,13 @@ func main() {
 	statusUC := usecase.NewGetTransactionStatusUseCase(txRepo)
 	balanceUC := usecase.NewGetBalanceUseCase(txRepo)
 
-	txHandler := handler.NewTransactionHandler(createUC, statusUC, balanceUC)
+	txHandler := handler.NewHandler(createUC, statusUC, balanceUC)
 
 	mux := http.NewServeMux()
 	txHandler.RegisterRoutes(mux)
+	mux.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", cfg.Server.Port),

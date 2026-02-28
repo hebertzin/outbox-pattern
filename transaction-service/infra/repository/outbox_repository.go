@@ -24,7 +24,7 @@ func (r *PostgresOutboxRepository) FetchPending(ctx context.Context, limit int) 
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	rows, err := tx.QueryContext(ctx, `
 		SELECT id, type, payload

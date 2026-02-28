@@ -8,27 +8,29 @@ import (
 	apperrors "transaction-service/internal/core/errors"
 )
 
-type CreateTransactionInput struct {
-	FromUserID  string
-	ToUserID    string
-	Amount      int64
-	Description string
-}
+type (
+	CreateInput struct {
+		FromUserID  string
+		ToUserID    string
+		Amount      int64
+		Description string
+	}
 
-type CreateTransactionOutput struct {
-	ID     string
-	Status string
-}
+	CreateOutput struct {
+		ID     string
+		Status string
+	}
 
-type CreateTransactionUseCase struct {
-	repo ports.TransactionRepository
-}
+	CreateTransactionUseCase struct {
+		repo ports.TransactionRepository
+	}
+)
 
 func NewCreateTransactionUseCase(repo ports.TransactionRepository) *CreateTransactionUseCase {
 	return &CreateTransactionUseCase{repo: repo}
 }
 
-func (uc *CreateTransactionUseCase) Execute(ctx context.Context, input CreateTransactionInput) (*CreateTransactionOutput, error) {
+func (uc *CreateTransactionUseCase) Execute(ctx context.Context, input CreateInput) (*CreateOutput, error) {
 	tx, err := entity.NewTransaction(input.FromUserID, input.ToUserID, input.Amount, input.Description)
 	if err != nil {
 		return nil, apperrors.BadRequest(apperrors.WithMessage(err.Error()))
@@ -51,7 +53,7 @@ func (uc *CreateTransactionUseCase) Execute(ctx context.Context, input CreateTra
 		return nil, apperrors.Unexpected(apperrors.WithError(err))
 	}
 
-	return &CreateTransactionOutput{
+	return &CreateOutput{
 		ID:     tx.ID,
 		Status: string(tx.Status),
 	}, nil

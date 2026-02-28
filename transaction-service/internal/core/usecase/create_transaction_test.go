@@ -53,7 +53,7 @@ func TestCreateTransactionUseCase_Success(t *testing.T) {
 	repo := &mockTransactionRepository{}
 	uc := usecase.NewCreateTransactionUseCase(repo)
 
-	out, err := uc.Execute(context.Background(), usecase.CreateTransactionInput{
+	out, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID:  "user-1",
 		ToUserID:    "user-2",
 		Amount:      1000,
@@ -82,7 +82,7 @@ func TestCreateTransactionUseCase_SavesOutboxEvent(t *testing.T) {
 	}
 	uc := usecase.NewCreateTransactionUseCase(repo)
 
-	_, err := uc.Execute(context.Background(), usecase.CreateTransactionInput{
+	_, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "user-1",
 		ToUserID:   "user-2",
 		Amount:     500,
@@ -106,7 +106,7 @@ func TestCreateTransactionUseCase_SameUser(t *testing.T) {
 	repo := &mockTransactionRepository{}
 	uc := usecase.NewCreateTransactionUseCase(repo)
 
-	_, err := uc.Execute(context.Background(), usecase.CreateTransactionInput{
+	_, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "user-1",
 		ToUserID:   "user-1",
 		Amount:     100,
@@ -124,7 +124,7 @@ func TestCreateTransactionUseCase_InvalidAmount(t *testing.T) {
 		repo := &mockTransactionRepository{}
 		uc := usecase.NewCreateTransactionUseCase(repo)
 
-		_, err := uc.Execute(context.Background(), usecase.CreateTransactionInput{
+		_, err := uc.Execute(context.Background(), usecase.CreateInput{
 			FromUserID: "user-1",
 			ToUserID:   "user-2",
 			Amount:     amount,
@@ -145,13 +145,13 @@ func TestCreateTransactionUseCase_RepositoryError(t *testing.T) {
 	}
 	uc := usecase.NewCreateTransactionUseCase(repo)
 
-	_, err := uc.Execute(context.Background(), usecase.CreateTransactionInput{
+	_, err := uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "user-1",
 		ToUserID:   "user-2",
 		Amount:     100,
 	})
 
-	assertException(t, err, http.StatusInternalServerError)
+	_ = assertException(t, err, http.StatusInternalServerError)
 }
 
 func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T) {
@@ -164,7 +164,7 @@ func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T)
 	}
 	uc := usecase.NewCreateTransactionUseCase(repo)
 
-	uc.Execute(context.Background(), usecase.CreateTransactionInput{
+	_, _ = uc.Execute(context.Background(), usecase.CreateInput{
 		FromUserID: "",
 		ToUserID:   "user-2",
 		Amount:     100,
