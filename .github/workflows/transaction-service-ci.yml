@@ -28,12 +28,11 @@ jobs:
           go-version-file: transaction-service/go.mod
           cache-dependency-path: transaction-service/go.sum
 
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: transaction-service
-          args: --timeout=5m
+        run: golangci-lint run --timeout=5m
 
   test:
     name: Tests & Coverage
