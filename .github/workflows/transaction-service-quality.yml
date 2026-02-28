@@ -17,13 +17,18 @@ defaults:
     working-directory: transaction-service
 
 jobs:
-  # ── Format ──────────────────────────────────────────────────────────────────
+  # ── Format (auto-fix + commit) ───────────────────────────────────────────────
   format:
-    name: Format Check (gofmt + goimports)
+    name: Format (gofmt + goimports)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -31,28 +36,26 @@ jobs:
           go-version-file: transaction-service/go.mod
           cache-dependency-path: transaction-service/go.sum
 
-      - name: Check gofmt
-        run: |
-          UNFORMATTED=$(gofmt -l .)
-          if [ -n "$UNFORMATTED" ]; then
-            echo "::error::Files not formatted with gofmt. Run: gofmt -w ."
-            echo "$UNFORMATTED"
-            exit 1
-          fi
-          echo "gofmt: all files are properly formatted"
-
       - name: Install goimports
         run: go install golang.org/x/tools/cmd/goimports@latest
 
-      - name: Check goimports
+      - name: Apply gofmt + goimports
         run: |
-          UNFORMATTED=$(goimports -local transaction-service -l .)
-          if [ -n "$UNFORMATTED" ]; then
-            echo "::error::Files with import issues. Run: goimports -local transaction-service -w ."
-            echo "$UNFORMATTED"
-            exit 1
+          gofmt -w .
+          goimports -local transaction-service -w .
+
+      - name: Commit formatting fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add -A
+            git commit -m "style: apply gofmt and goimports formatting"
+            git push
+            echo "Formatting fixes committed and pushed"
+          else
+            echo "No formatting changes needed"
           fi
-          echo "goimports: all imports are properly organized"
 
   # ── Vet + Build ─────────────────────────────────────────────────────────────
   vet-and-build:
