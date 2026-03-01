@@ -13,7 +13,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	"github.com/google/uuid"
@@ -73,28 +72,24 @@ func connectDB() (*sql.DB, error) {
 	return db, nil
 }
 
+// migrationOrder defines the correct execution order for SQL migrations.
+// Explicit ordering avoids issues with alphabetical sort (add_* before create_*).
+var migrationOrder = []string{
+	"create_transaction_table.sql",
+	"create_outbox_table.sql",
+	"add_idempotency_key.sql",
+	"add_outbox_retry.sql",
+}
+
 func runMigrations(db *sql.DB) error {
 	dir := filepath.Join("..", "..", "migrations")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return fmt.Errorf("read migrations dir: %w", err)
-	}
-
-	var files []string
-	for _, e := range entries {
-		if !e.IsDir() && filepath.Ext(e.Name()) == ".sql" {
-			files = append(files, filepath.Join(dir, e.Name()))
-		}
-	}
-	sort.Strings(files)
-
-	for _, f := range files {
-		content, err := os.ReadFile(f)
+	for _, name := range migrationOrder {
+		content, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
-			return fmt.Errorf("read %s: %w", f, err)
+			return fmt.Errorf("read %s: %w", name, err)
 		}
 		if _, err := db.Exec(string(content)); err != nil {
-			return fmt.Errorf("exec %s: %w", f, err)
+			return fmt.Errorf("exec %s: %w", name, err)
 		}
 	}
 	return nil
