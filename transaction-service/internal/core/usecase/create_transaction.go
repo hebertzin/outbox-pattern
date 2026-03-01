@@ -37,9 +37,6 @@ func NewCreateTransactionUseCase(repo ports.TransactionRepository, logger *slog.
 
 func (uc *CreateTransactionUseCase) Execute(ctx context.Context, input CreateInput) (*CreateOutput, error) {
 	uc.logger.InfoContext(ctx, "create transaction request",
-		slog.String("from_user_id", input.FromUserID),
-		slog.String("to_user_id", input.ToUserID),
-		slog.Int64("amount", input.Amount),
 		slog.Bool("has_idempotency_key", input.IdempotencyKey != ""),
 	)
 

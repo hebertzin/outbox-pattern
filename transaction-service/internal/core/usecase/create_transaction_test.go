@@ -199,6 +199,55 @@ func TestCreateTransactionUseCase_IdempotencyKeyReturnsExisting(t *testing.T) {
 	}
 }
 
+func TestCreateTransactionUseCase_IdempotencyKeyRepositoryError(t *testing.T) {
+	repo := &mockTransactionRepository{
+		findByIdempotencyKeyFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
+			return nil, errors.New("db error")
+		},
+	}
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
+
+	_, err := uc.Execute(context.Background(), usecase.CreateInput{
+		FromUserID:     "user-1",
+		ToUserID:       "user-2",
+		Amount:         100,
+		IdempotencyKey: "key-abc",
+	})
+
+	_ = assertException(t, err, http.StatusInternalServerError)
+}
+
+func TestCreateTransactionUseCase_NewTransactionWithIdempotencyKey(t *testing.T) {
+	var capturedTx *entity.Transaction
+	repo := &mockTransactionRepository{
+		findByIdempotencyKeyFn: func(_ context.Context, _ string) (*entity.Transaction, error) {
+			return nil, nil
+		},
+		createFn: func(_ context.Context, tx *entity.Transaction, _ *entity.Outbox) error {
+			capturedTx = tx
+			return nil
+		},
+	}
+	uc := usecase.NewCreateTransactionUseCase(repo, testLogger())
+
+	out, err := uc.Execute(context.Background(), usecase.CreateInput{
+		FromUserID:     "user-1",
+		ToUserID:       "user-2",
+		Amount:         500,
+		IdempotencyKey: "key-new",
+	})
+
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if out.Idempotent {
+		t.Fatal("expected Idempotent to be false for a new transaction")
+	}
+	if capturedTx == nil || capturedTx.IdempotencyKey == nil || *capturedTx.IdempotencyKey != "key-new" {
+		t.Fatal("expected idempotency key to be set on the transaction")
+	}
+}
+
 func TestCreateTransactionUseCase_DoesNotCallRepoOnValidationError(t *testing.T) {
 	called := false
 	repo := &mockTransactionRepository{
