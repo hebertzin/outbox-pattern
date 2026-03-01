@@ -4,6 +4,25 @@
 
 ---
 
+## Built with Claude Code
+
+This project was entirely written by **[Claude Code](https://claude.ai/claude-code)** (Anthropic's AI CLI), guided by **[@hebertzin](https://github.com/hebertzin)**.
+
+My role throughout the project was to direct the AI with decisions about:
+
+- **Architecture** — Clean / Hexagonal Architecture, ports & adapters, dependency inversion
+- **Design patterns** — Factory, Transactional Outbox, Idempotency, Repository
+- **Code quality** — structured logging (no PII), typed error pattern (`*Exception`), linting rules
+- **Testing strategy** — unit tests, handler tests with `httptest`, race detector, 90% coverage gate, E2E tests with real Postgres, k6 load tests
+- **Infrastructure** — RabbitMQ with `MessageId` deduplication, `FOR UPDATE SKIP LOCKED`, connection pool tuning, graceful shutdown
+- **Observability** — Prometheus metrics middleware, Grafana, Loki, Promtail
+- **CI/CD** — GitHub Actions workflows for format, vet, lint, tests, and E2E per service
+- **Documentation** — this README, API reference, design decisions
+
+The result is a production-grade codebase built through an iterative human–AI collaboration, where every architectural and quality decision was driven by human intent.
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -20,7 +39,14 @@
 - [CI/CD Pipeline](#cicd-pipeline)
 - [Load Testing](#load-testing)
 - [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Run Transaction Service](#run-transaction-service)
+  - [Run Users Service](#run-users-service)
+  - [Run Tests](#run-tests)
+  - [Apply Migrations Manually](#apply-migrations-manually)
 - [Configuration](#configuration)
+  - [Transaction Service Env Vars](#transaction-service-env-vars)
+  - [Users Service Env Vars](#users-service-env-vars)
 - [Project Structure](#project-structure)
 - [Design Decisions](#design-decisions)
 
@@ -189,12 +215,41 @@ transaction-service/
 
 ### Users Service
 
-Manages user registration with its own outbox pattern implementation.
+Manages user registration with its own outbox pattern implementation, following the same architecture as the transaction service.
 
 **Key capabilities:**
-- Create users with email validation and password hashing
-- Atomic user + outbox event write
-- Configurable background worker interval
+- Create users with email validation and bcrypt password hashing
+- Atomic user + outbox event write in a single DB transaction
+- Background worker with retry logic (up to 3 attempts before `FAILED`)
+- RabbitMQ publisher with `MessageId = event.ID` for deduplication
+- Prometheus metrics exposed at `/metrics`
+
+**Components:**
+
+```
+users-service/
+├── cmd/
+│   ├── main.go               # HTTP server wiring + graceful shutdown
+│   └── worker/main.go        # Standalone outbox worker process
+├── config/                   # Env-based configuration
+├── infra/
+│   ├── broker/               # RabbitMQ connection + publisher
+│   ├── db/connection.go      # PostgreSQL connection + pool tuning
+│   └── repository/           # Postgres implementations
+│       ├── user_repository.go
+│       └── outbox_repository.go
+├── internal/core/
+│   ├── domain/
+│   │   ├── entity/           # User, Outbox — pure domain types
+│   │   └── ports/            # Repository and publisher interfaces
+│   ├── errors/               # Typed *Exception error pattern
+│   ├── handler/              # HTTP handlers + factory + metrics
+│   └── usecase/              # Business logic + factory
+│       ├── create_user.go
+│       └── factory.go
+├── migrations/               # SQL migration files
+└── tests/                    # E2E and load test scripts
+```
 
 ---
 
@@ -307,6 +362,46 @@ Returns the net balance for a user — sum of all `COMPLETED` transactions recei
 | `GET /metrics` | Prometheus metrics |
 | `GET /swagger/` | Swagger UI |
 | `GET /swagger/doc.json` | OpenAPI spec |
+
+---
+
+### Users Service  `localhost:8081`
+
+#### Create User
+
+```http
+POST /api/v1/users
+Content-Type: application/json
+```
+
+```json
+{
+  "email":    "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+| Response | Condition |
+|----------|-----------|
+| `201 Created` | User created successfully |
+| `400 Bad Request` | Invalid email format or password shorter than 8 characters |
+| `500 Internal Server Error` | Duplicate email or persistence error |
+
+```json
+{
+  "code": 201,
+  "message": "user created",
+  "data": {
+    "id": "8d3a1f2c-..."
+  }
+}
+```
+
+#### Utility Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /metrics` | Prometheus metrics |
 
 ---
 
@@ -444,26 +539,32 @@ Metrics exposed by the service (via Prometheus middleware on every request):
 
 ## CI/CD Pipeline
 
-Four GitHub Actions workflows run on every push to `main` and `staging`:
+Eight GitHub Actions workflows (four per service) run on every push to `main` and `staging` when the corresponding service files change:
 
-### Quality — `transaction-service-quality.yml`
+### Quality — `*-quality.yml`
 
 | Job | What it does |
 |-----|-------------|
 | **Format** | Runs `gofmt` + `goimports`, auto-commits fixes back to the branch |
 | **Vet & Build** | `go vet ./...` + full binary build |
 
-### Lint — `transaction-service-lint.yml`
+### Lint — `*-lint.yml`
 
 Runs `golangci-lint` with the project's `.golangci.yml` config.
 
 Active linters: `errcheck`, `govet`, `staticcheck`, `gosimple`, `ineffassign`, `unused`, `bodyclose`, `misspell`, `revive`, `copyloopvar`.
 
-### Tests — `transaction-service-tests.yml`
+### Tests — `*-tests.yml`
 
 - Runs all tests with the **race detector** (`go test -race`)
-- Enforces a **90% coverage gate** — the build fails below that threshold
+- Enforces a **90% coverage gate** on `./internal/core/usecase/...` — build fails below that threshold
 - Uploads coverage report as a build artifact (7-day retention)
+
+### E2E — `*-e2e.yml`
+
+- Spins up a real PostgreSQL service container
+- Runs migrations in explicit order (not alphabetical)
+- Executes E2E tests tagged with `//go:build e2e` against a real `httptest.Server`
 
 ### Claude Code Review — `claude.yml`
 
@@ -524,51 +625,93 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml run --rm k6
 
 ### Prerequisites
 
-- Docker + Docker Compose
-- Go 1.22+ (for local development)
+- [Docker](https://docs.docker.com/get-docker/) + [Docker Compose](https://docs.docker.com/compose/)
+- [Go 1.22+](https://go.dev/dl/) (for local development and tests)
+- [golangci-lint](https://golangci-lint.run/usage/install/) (optional, for local linting)
 
-### Run everything
+---
+
+### Run Transaction Service
 
 ```bash
-# Clone
 git clone https://github.com/hebertzin/outbox-pattern.git
 cd outbox-pattern/transaction-service
 
-# Start all services (app, worker, postgres, rabbitmq, observability stack)
+# Start app + worker + postgres + rabbitmq + full observability stack
 docker compose up --build -d
 
 # Verify the API is up
 curl http://localhost:8080/api/v1/balance/any-user-id
 # → {"code":200,"message":"ok","data":{"user_id":"any-user-id","balance":0}}
+
+# Create a transaction
+curl -X POST http://localhost:8080/api/v1/transactions \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"from_user_id":"user-a","to_user_id":"user-b","amount":500}'
+# → {"code":201,"message":"transaction created","data":{"id":"...","status":"PENDING"}}
 ```
 
-### Run tests
+---
+
+### Run Users Service
 
 ```bash
-cd transaction-service
+cd outbox-pattern/users-service
 
-# All tests
+# Start app + worker + postgres + rabbitmq
+docker compose up --build -d
+
+# The users-service binds to host port 8081 (to avoid conflict with transaction-service)
+curl -X POST http://localhost:8081/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"securepassword123"}'
+# → {"code":201,"message":"user created","data":{"id":"..."}}
+```
+
+---
+
+### Run Tests
+
+```bash
+# ── Transaction Service ──────────────────────────────────────────────
+cd outbox-pattern/transaction-service
+
+# All unit + handler tests
 go test ./...
 
 # With race detector + coverage
-go test -race ./... -coverprofile=coverage.out
-go tool cover -html=coverage.out   # open in browser
+go test -race ./internal/core/usecase/... -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out        # print per-function coverage
+go tool cover -html=coverage.out        # open in browser
 
-# Only use case layer
-go test -v ./internal/core/usecase/...
+# E2E tests (requires a running Postgres — see env vars below)
+go test -tags e2e ./tests/e2e/... -v -timeout 60s
+
+# ── Users Service ────────────────────────────────────────────────────
+cd outbox-pattern/users-service
+
+go test ./...
+go test -race ./internal/core/usecase/... -coverprofile=coverage.out -covermode=atomic
+go test -tags e2e ./tests/e2e/... -v -timeout 60s
 ```
 
-### Run linter
+---
+
+### Run Linter
 
 ```bash
-cd transaction-service
+cd transaction-service   # or users-service
 golangci-lint run --config=.golangci.yml
 ```
 
-### Apply database migrations
+---
 
-Migrations live in `transaction-service/migrations/`. Run them in order:
+### Apply Migrations Manually
 
+If running without Docker, apply migrations in the following order:
+
+**Transaction Service** (`transaction_db`):
 ```bash
 psql -h localhost -U postgres -d transaction_db \
   -f migrations/create_transaction_table.sql \
@@ -577,15 +720,23 @@ psql -h localhost -U postgres -d transaction_db \
   -f migrations/add_outbox_retry.sql
 ```
 
+**Users Service** (`users_db`):
+```bash
+psql -h localhost -U postgres -d users_db \
+  -f migrations/create_user_table.sql \
+  -f migrations/create_outbox_table.sql \
+  -f migrations/add_outbox_retry.sql
+```
+
 ---
 
 ## Configuration
 
-### Transaction Service
+### Transaction Service Env Vars
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SERVER_PORT` | `8080` | HTTP server port |
+| `SERVER_PORT` | `8080` | HTTP server listen port |
 | `DB_HOST` | `localhost` | PostgreSQL host |
 | `DB_PORT` | `5432` | PostgreSQL port |
 | `DB_USER` | `postgres` | PostgreSQL user |
@@ -593,17 +744,28 @@ psql -h localhost -U postgres -d transaction_db \
 | `DB_NAME` | `transaction_db` | PostgreSQL database name |
 | `RABBIT_URL` | `amqp://guest:guest@localhost:5672/` | RabbitMQ connection string |
 
-### Users Service
+### Users Service Env Vars
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SERVER_PORT` | `8080` | HTTP server port |
+| `SERVER_PORT` | `8080` | HTTP server listen port |
 | `DB_HOST` | `localhost` | PostgreSQL host |
 | `DB_PORT` | `5432` | PostgreSQL port |
 | `DB_USER` | `postgres` | PostgreSQL user |
 | `DB_PASSWORD` | `postgres` | PostgreSQL password |
 | `DB_NAME` | `users_db` | PostgreSQL database name |
-| `OUTBOX_WORKER_INTERVAL` | `5s` | How often the worker polls |
+| `RABBIT_URL` | `amqp://guest:guest@localhost:5672/` | RabbitMQ connection string |
+| `RABBIT_EXCHANGE` | `user.events` | RabbitMQ exchange name for user events |
+
+> **E2E test env vars** — used only when running `go test -tags e2e`:
+>
+> | Variable | Default | Description |
+> |----------|---------|-------------|
+> | `TEST_DB_HOST` | `localhost` | Postgres host for E2E tests |
+> | `TEST_DB_PORT` | `5432` | Postgres port for E2E tests |
+> | `TEST_DB_USER` | `postgres` | Postgres user for E2E tests |
+> | `TEST_DB_PASSWORD` | `postgres` | Postgres password for E2E tests |
+> | `TEST_DB_NAME` | `transaction_db` / `users_db` | Database for E2E tests |
 
 ---
 
@@ -612,12 +774,17 @@ psql -h localhost -U postgres -d transaction_db \
 ```
 outbox-pattern/
 ├── .github/
-│   ├── pull_request_template.md   # PR template with "Notes for @claude" section
+│   ├── pull_request_template.md
 │   └── workflows/
 │       ├── claude.yml                        # Automated PR review
 │       ├── transaction-service-quality.yml   # Format + vet + build
 │       ├── transaction-service-lint.yml      # golangci-lint
-│       └── transaction-service-tests.yml     # Tests + 90% coverage gate
+│       ├── transaction-service-tests.yml     # Tests + 90% coverage gate
+│       ├── transaction-service-e2e.yml       # E2E with real Postgres
+│       ├── users-service-quality.yml
+│       ├── users-service-lint.yml
+│       ├── users-service-tests.yml
+│       └── users-service-e2e.yml
 │
 ├── transaction-service/
 │   ├── cmd/
@@ -634,23 +801,39 @@ outbox-pattern/
 │   │   │   ├── entity/            # Transaction, Outbox — pure Go structs
 │   │   │   └── ports/             # Repository + Publisher interfaces
 │   │   ├── errors/                # *Exception typed error pattern
-│   │   ├── handler/               # HTTP handlers + factory
+│   │   ├── handler/               # HTTP handlers + factory + metrics
 │   │   └── usecase/               # Business logic + factory
 │   ├── migrations/                # Ordered SQL migration files
 │   ├── observability/             # Prometheus, Grafana, Loki configs
-│   ├── tests/load/                # k6 load test scripts
-│   ├── .golangci.yml              # Linter configuration
+│   ├── tests/
+│   │   ├── e2e/                   # E2E tests (build tag: e2e)
+│   │   └── load/                  # k6 load test scripts
+│   ├── .golangci.yml
 │   ├── docker-compose.yml         # Full stack (app + infra + observability)
-│   └── docker-compose.load-test.yml  # k6 overlay for load testing
+│   └── docker-compose.load-test.yml
 │
 └── users-service/
-    ├── main.go
-    ├── config/
-    ├── domain/
-    ├── application/
+    ├── cmd/
+    │   ├── main.go                # HTTP server entrypoint
+    │   └── worker/main.go         # Outbox worker entrypoint
+    ├── config/config.go           # Env-based config loading
     ├── infra/
-    ├── presentation/
-    └── migrations/
+    │   ├── broker/                # RabbitMQ connection + publisher
+    │   ├── db/connection.go       # DB connection + pool config
+    │   └── repository/            # Postgres adapters
+    ├── internal/core/
+    │   ├── domain/
+    │   │   ├── entity/            # User, Outbox — pure Go structs
+    │   │   └── ports/             # Repository + Publisher interfaces
+    │   ├── errors/                # *Exception typed error pattern
+    │   ├── handler/               # HTTP handlers + factory + metrics
+    │   └── usecase/               # Business logic + factory
+    ├── migrations/                # Ordered SQL migration files
+    ├── tests/
+    │   ├── e2e/                   # E2E tests (build tag: e2e)
+    │   └── load/                  # k6 load test scripts
+    ├── .golangci.yml
+    └── docker-compose.yml         # App + postgres + rabbitmq
 ```
 
 ---
