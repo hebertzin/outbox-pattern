@@ -9,8 +9,10 @@ import (
 type OutboxStatus string
 
 const (
-	OutboxStatusPending   OutboxStatus = "PENDING"
-	OutboxStatusProcessed OutboxStatus = "PROCESSED"
+	OutboxStatusPending    OutboxStatus = "PENDING"
+	OutboxStatusProcessing OutboxStatus = "PROCESSING"
+	OutboxStatusProcessed  OutboxStatus = "PROCESSED"
+	OutboxStatusFailed     OutboxStatus = "FAILED"
 )
 
 type Outbox struct {

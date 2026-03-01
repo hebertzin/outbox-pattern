@@ -2,52 +2,51 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
-	corerrors "users-services/internal/core/errors"
+	"fmt"
+	"log/slog"
 
-	"users-services/internal/core/domain/entity"
-	"users-services/internal/core/domain/ports"
+	"users-service/internal/core/domain/entity"
+	"users-service/internal/core/domain/ports"
+	apperrors "users-service/internal/core/errors"
 )
 
-type CreateUserInput struct {
-	Email    string
-	Password string
+type (
+	CreateUserInput struct {
+		Email    string
+		Password string
+	}
+
+	CreateUserOutput struct {
+		ID string
+	}
+
+	CreateUserUseCase struct {
+		userRepo ports.UserRepository
+		logger   *slog.Logger
+	}
+)
+
+func NewCreateUserUseCase(userRepo ports.UserRepository, logger *slog.Logger) *CreateUserUseCase {
+	return &CreateUserUseCase{userRepo: userRepo, logger: logger}
 }
 
-type CreateUserOutput struct {
-	ID string
-}
+func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput) (*CreateUserOutput, error) {
+	uc.logger.InfoContext(ctx, "create user request")
 
-type CreateUserUseCase struct {
-	userRepo ports.UserRepository
-}
-
-func NewCreateUserUseCase(userRepo ports.UserRepository) *CreateUserUseCase {
-	return &CreateUserUseCase{userRepo: userRepo}
-}
-
-func (uc *CreateUserUseCase) Execute(ctx context.Context, input CreateUserInput) (*CreateUserOutput, *corerrors.Exception) {
 	user, err := entity.NewUser(input.Email, input.Password)
 	if err != nil {
-		return nil, corerrors.BadRequest(
-			corerrors.WithMessage(err.Error()),
-			corerrors.WithError(err),
-		)
+		uc.logger.WarnContext(ctx, "user validation failed", slog.String("reason", err.Error()))
+		return nil, apperrors.BadRequest(apperrors.WithMessage(err.Error()))
 	}
 
-	payload, err := json.Marshal(map[string]string{
-		"userId": user.ID,
-		"email":  user.Email,
-	})
-	if err != nil {
-		return nil, corerrors.Unexpected(corerrors.WithError(err))
-	}
-
-	outbox := entity.NewOutbox("UserCreated", string(payload))
+	outbox := entity.NewOutbox("UserCreated", fmt.Sprintf(`{"userId":%q}`, user.ID))
 
 	if err := uc.userRepo.Insert(ctx, user, outbox); err != nil {
-		return nil, corerrors.Unexpected(corerrors.WithError(err))
+		uc.logger.ErrorContext(ctx, "persist user failed", slog.String("error", err.Error()))
+		return nil, apperrors.Unexpected(apperrors.WithError(err))
 	}
+
+	uc.logger.InfoContext(ctx, "user created", slog.String("user_id", user.ID))
 
 	return &CreateUserOutput{ID: user.ID}, nil
 }

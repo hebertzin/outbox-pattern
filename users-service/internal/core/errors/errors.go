@@ -33,12 +33,9 @@ func WithError(err error) UserFriendlyExceptionOption {
 func NotFound(opts ...UserFriendlyExceptionOption) *Exception {
 	defaultOpts := []UserFriendlyExceptionOption{
 		WithCode(404),
-		WithMessage("No entities found with given parameters"),
+		WithMessage("no entities found with given parameters"),
 	}
-
-	defaultOpts = append(defaultOpts, opts...)
-
-	return UserFriendlyException(defaultOpts...)
+	return UserFriendlyException(append(defaultOpts, opts...)...)
 }
 
 func BadRequest(opts ...UserFriendlyExceptionOption) *Exception {
@@ -46,10 +43,7 @@ func BadRequest(opts ...UserFriendlyExceptionOption) *Exception {
 		WithCode(400),
 		WithMessage("bad request"),
 	}
-
-	defaultOpts = append(defaultOpts, opts...)
-
-	return UserFriendlyException(defaultOpts...)
+	return UserFriendlyException(append(defaultOpts, opts...)...)
 }
 
 func Conflict(opts ...UserFriendlyExceptionOption) *Exception {
@@ -57,48 +51,32 @@ func Conflict(opts ...UserFriendlyExceptionOption) *Exception {
 		WithCode(409),
 		WithMessage("conflict"),
 	}
-
-	defaultOpts = append(defaultOpts, opts...)
-
-	return UserFriendlyException(defaultOpts...)
+	return UserFriendlyException(append(defaultOpts, opts...)...)
 }
 
 func Unauthorized(opts ...UserFriendlyExceptionOption) *Exception {
 	defaultOpts := []UserFriendlyExceptionOption{
 		WithCode(401),
-		WithMessage("You need to login first"),
+		WithMessage("unauthorized"),
 	}
-
-	defaultOpts = append(defaultOpts, opts...)
-
-	return UserFriendlyException(defaultOpts...)
+	return UserFriendlyException(append(defaultOpts, opts...)...)
 }
 
 func Unexpected(opts ...UserFriendlyExceptionOption) *Exception {
 	defaultOpts := []UserFriendlyExceptionOption{
 		WithCode(500),
-		WithMessage("Now you could PANIC! We don't have any idea what's happening here"),
+		WithMessage("internal server error"),
 	}
-
-	defaultOpts = append(defaultOpts, opts...)
-
-	return UserFriendlyException(defaultOpts...)
+	return UserFriendlyException(append(defaultOpts, opts...)...)
 }
 
 func UserFriendlyException(opts ...UserFriendlyExceptionOption) *Exception {
-	const (
-		defaultMessage = "This is a friendly error, don't panic! Everything is under control"
-		defaultCode    = 500
-	)
-
 	h := &Exception{
-		Code:    defaultCode,
-		Message: defaultMessage,
+		Code:    500,
+		Message: "internal server error",
 	}
-
 	for _, opt := range opts {
 		opt(h)
 	}
-
 	return h
 }

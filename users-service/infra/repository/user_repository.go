@@ -3,7 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"users-services/domain/entity"
+
+	"users-service/internal/core/domain/entity"
 )
 
 type PostgresUserRepository struct {
@@ -19,7 +20,7 @@ func (r *PostgresUserRepository) Insert(ctx context.Context, user *entity.User, 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	const insertUser = `
 		INSERT INTO users (id, email, password, created_at)
