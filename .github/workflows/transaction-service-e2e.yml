@@ -1,0 +1,56 @@
+name: Transaction Service - E2E Tests
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - "transaction-service/**"
+      - ".github/workflows/transaction-service-e2e.yml"
+  pull_request:
+    branches: [main, staging]
+    paths:
+      - "transaction-service/**"
+      - ".github/workflows/transaction-service-e2e.yml"
+
+defaults:
+  run:
+    working-directory: transaction-service
+
+jobs:
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: transaction_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: transaction-service/go.mod
+          cache-dependency-path: transaction-service/go.sum
+
+      - name: Run E2E tests
+        run: go test -tags e2e ./tests/e2e/... -v -timeout 60s
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+          TEST_DB_NAME: transaction_db

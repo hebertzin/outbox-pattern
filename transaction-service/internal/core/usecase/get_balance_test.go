@@ -51,3 +51,18 @@ func TestGetBalanceUseCase_RepositoryError(t *testing.T) {
 
 	_ = assertException(t, err, http.StatusInternalServerError)
 }
+
+func TestNewFactory_WiresAllUseCases(t *testing.T) {
+	repo := &mockTransactionRepository{}
+	f := usecase.NewFactory(repo, testLogger())
+
+	if f.Create == nil {
+		t.Fatal("expected Create use case to be non-nil")
+	}
+	if f.Status == nil {
+		t.Fatal("expected Status use case to be non-nil")
+	}
+	if f.Balance == nil {
+		t.Fatal("expected Balance use case to be non-nil")
+	}
+}
