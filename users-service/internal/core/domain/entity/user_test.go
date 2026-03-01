@@ -3,7 +3,8 @@ package entity_test
 import (
 	"errors"
 	"testing"
-	"users-services/internal/core/domain/entity"
+
+	"users-service/internal/core/domain/entity"
 )
 
 func TestNewUser_Success(t *testing.T) {

@@ -3,13 +3,12 @@ package config
 import (
 	"os"
 	"strconv"
-	"time"
 )
 
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
-	Worker   WorkerConfig
+	RabbitMQ RabbitMQConfig
 }
 
 type ServerConfig struct {
@@ -24,13 +23,13 @@ type DatabaseConfig struct {
 	Name     string
 }
 
-type WorkerConfig struct {
-	Interval time.Duration
+type RabbitMQConfig struct {
+	URL      string
+	Exchange string
 }
 
 func Load() *Config {
 	dbPort, _ := strconv.Atoi(getEnv("DB_PORT", "5432"))
-	workerInterval, _ := time.ParseDuration(getEnv("OUTBOX_WORKER_INTERVAL", "5s"))
 
 	return &Config{
 		Server: ServerConfig{
@@ -43,15 +42,16 @@ func Load() *Config {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			Name:     getEnv("DB_NAME", "users_db"),
 		},
-		Worker: WorkerConfig{
-			Interval: workerInterval,
+		RabbitMQ: RabbitMQConfig{
+			URL:      getEnv("RABBIT_URL", "amqp://guest:guest@localhost:5672/"),
+			Exchange: getEnv("RABBIT_EXCHANGE", "user.events"),
 		},
 	}
 }
 
 func getEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
 	return fallback
 }

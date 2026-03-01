@@ -3,32 +3,45 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	corerrors "users-services/internal/core/errors"
 )
 
-type HttpResponse struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
+type (
+	// Response is the standard success envelope.
+	Response struct {
+		Code    int         `json:"code"`
+		Message string      `json:"message"`
+		Data    interface{} `json:"data,omitempty"`
+	}
 
-type BaseHandler struct{}
+	// ErrResponse follows a Problem Details-like shape for errors.
+	ErrResponse struct {
+		Title    string `json:"title"`
+		Status   int    `json:"status"`
+		Detail   string `json:"detail,omitempty"`
+		Instance string `json:"instance,omitempty"`
+	}
 
-func (b *BaseHandler) RespondWithException(w http.ResponseWriter, exc *corerrors.Exception) {
+	// Base embeds shared response helpers into every handler.
+	Base struct{}
+)
+
+func (b *Base) RespondWithError(w http.ResponseWriter, r *http.Request, status int, title, detail string) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(exc.Code)
-	json.NewEncoder(w).Encode(exc)
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(ErrResponse{
+		Title:    title,
+		Status:   status,
+		Detail:   detail,
+		Instance: r.URL.String(),
+	})
 }
 
-func (b *BaseHandler) RespondWithSuccess(w http.ResponseWriter, code int, message string, data interface{}) {
+func (b *Base) RespondWithSuccess(w http.ResponseWriter, code int, message string, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-
-	resp := HttpResponse{
+	_ = json.NewEncoder(w).Encode(Response{
 		Code:    code,
 		Message: message,
 		Data:    data,
-	}
-
-	json.NewEncoder(w).Encode(resp)
+	})
 }

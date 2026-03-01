@@ -2,7 +2,8 @@ package ports
 
 import (
 	"context"
-	"users-services/internal/core/domain/entity"
+
+	"users-service/internal/core/domain/entity"
 )
 
 type EventPublisher interface {
