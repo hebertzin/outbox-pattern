@@ -3,6 +3,7 @@ package entity_test
 import (
 	"errors"
 	"testing"
+
 	"users-service/internal/core/domain/entity"
 )
 

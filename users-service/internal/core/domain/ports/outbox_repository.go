@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+
 	"users-service/internal/core/domain/entity"
 )
 

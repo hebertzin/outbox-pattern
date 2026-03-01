@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"users-service/config"
+	"users-service/infra/broker"
 	infradb "users-service/infra/db"
 	"users-service/infra/repository"
-	"users-service/infra/broker"
 	"users-service/internal/core/domain/entity"
 	"users-service/internal/core/domain/ports"
 )
